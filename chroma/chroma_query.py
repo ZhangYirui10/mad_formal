@@ -28,8 +28,9 @@ for example in tqdm(all_examples, desc="Processing examples"):
         evidence_text.append(evidence_id_to_text[str(evidence_id)])
     
     example_to_retrieved_evidence_map[example_id] = {
+        "claim": claim,
         "top_20_evidences_ids": evidence_ids,
-        "top_20_evidences_text": evidence_text
+        "evidence_full_text": evidence_text
     }
 
 # Save mapping to JSON

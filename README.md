@@ -92,6 +92,19 @@ This method:
 - Sorts by similarity score and deduplicates to get top 20
 - Output file: `retrieved_evidence_bgebase_intent_enhanced.json`
 
+#### Method 3: Groundtruth Evidence Search
+Use the groundtruth evidence directly from the dataset:
+
+```bash
+# No additional query step needed - use full_evidence.json directly
+```
+
+This method:
+- Uses the complete groundtruth evidence from the original dataset
+- Provides all available evidence for each claim without retrieval limitations
+- Input file: `data/full_evidence.json`
+- No preprocessing or retrieval step required
+
 ### 3. Run Main Program
 
 Finally, run `main.py` for claim verification:
@@ -132,6 +145,16 @@ python main.py --mode single --input_file data/retrieved_evidence_bgebase_intent
 python main.py --mode multi --input_file data/retrieved_evidence_bgebase_intent_enhanced.json
 ```
 
+**For Groundtruth Evidence Results:**
+```bash
+# Single agent mode with groundtruth evidence
+python main.py --mode single --input_file data/full_evidence.json
+
+# Multi-agent debate mode with groundtruth evidence
+python main.py --mode multi --input_file data/full_evidence.json
+
+```
+
 ## Output Results
 
 After the program completes, it will generate:
@@ -144,6 +167,7 @@ After the program completes, it will generate:
 |---------------|------------|----------------|-------------|
 | Basic Vector | `retrieved_evidence_bgebase.json` | `{filename}_answer_map_{mode}.json` | Direct claim-to-evidence matching |
 | Intent-Enhanced | `retrieved_evidence_bgebase_intent_enhanced.json` | `{filename}_answer_map_{mode}.json` | Intent-aware pro/con evidence retrieval |
+| Groundtruth Evidence | `full_evidence.json` | `{filename}_answer_map_{mode}.json` | Complete groundtruth evidence from dataset |
 
 **Output File Naming Convention:**
 - The output filename is automatically generated based on the input filename
