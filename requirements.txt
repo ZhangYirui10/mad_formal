@@ -1,0 +1,6 @@
+torch
+transformers
+chromadb
+tqdm
+sentence_transformers
+accelerate
