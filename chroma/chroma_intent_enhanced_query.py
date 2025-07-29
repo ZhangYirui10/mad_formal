@@ -1,11 +1,12 @@
 from chroma import ChromaClient
 import sys
 import os
+import json
+import traceback
+from tqdm import tqdm
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.intent_enhanced_retrieval import intent_enhanced_reformulation
-import json
-from tqdm import tqdm
-import os
 
 # Fix paths - use relative paths from the script location
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +28,7 @@ with open(evidence_file_path, "r") as f:
 print(f"Loaded {len(evidence_id_to_text)} evidence mappings")
 
 # Output file
-output_file = os.path.join(project_root, "data", "retrieved_evidence_bgebase_intent_enhanced.json")
+output_file = os.path.join(project_root, "data", "retrieved_evidence_bgebase_intent_enhanced1.json")
 
 # Load or initialize output map
 if os.path.exists(output_file):
@@ -75,45 +76,29 @@ for example in tqdm(all_examples, desc="Processing examples"):
         pro_claim = result["reformulated_pro"]
         con_claim = result["reformulated_con"]
 
-        # Step 2: Query ChromaDB with original claim, pro_claim and con_claim
-        original_results = chroma_client.query_score(query_text=claim, top_k=50, include=["metadatas", "distances"])
+        # Step 2: Query ChromaDB with pro_claim and con_claim only
         pro_results = chroma_client.query_score(query_text=pro_claim, top_k=50, include=["metadatas", "distances"])
         con_results = chroma_client.query_score(query_text=con_claim, top_k=50, include=["metadatas", "distances"])
 
-        # Step 3: Process pro results
-        pro_evidence_ids = []
-        for score, meta in zip(pro_results["distances"][0], pro_results["metadatas"][0]):
-            evidence_id = meta["evidence_id"]
-            pro_evidence_ids.append(evidence_id)
-
-        # Step 4: Process con results
-        con_evidence_ids = []
-        for score, meta in zip(con_results["distances"][0], con_results["metadatas"][0]):
-            evidence_id = meta["evidence_id"]
-            con_evidence_ids.append(evidence_id)
-
-        # Step 5: Merge results with score and evidence_id for top 20
+        # Step 3: Merge results with score and evidence_id
         combined = []
 
-        for score, meta in zip(original_results["distances"][0], original_results["metadatas"][0]):
-            combined.append({
-                "evidence_id": meta["evidence_id"],
-                "score": score
-            })
+        # Check if results are not empty before processing
+        if pro_results["distances"] and pro_results["metadatas"]:
+            for score, meta in zip(pro_results["distances"][0], pro_results["metadatas"][0]):
+                combined.append({
+                    "evidence_id": meta["evidence_id"],
+                    "score": score
+                })
 
-        for score, meta in zip(pro_results["distances"][0], pro_results["metadatas"][0]):
-            combined.append({
-                "evidence_id": meta["evidence_id"],
-                "score": score
-            })
+        if con_results["distances"] and con_results["metadatas"]:
+            for score, meta in zip(con_results["distances"][0], con_results["metadatas"][0]):
+                combined.append({
+                    "evidence_id": meta["evidence_id"],
+                    "score": score
+                })
 
-        for score, meta in zip(con_results["distances"][0], con_results["metadatas"][0]):
-            combined.append({
-                "evidence_id": meta["evidence_id"],
-                "score": score
-            })
-
-        # Step 6: Sort by score (lower is better for distances) and deduplicate evidence_ids
+        # Step 4: Sort by score (lower is better for distances) and deduplicate evidence_ids
         seen = set()
         top_20_ids = []
         top_20_text = []
@@ -129,14 +114,12 @@ for example in tqdm(all_examples, desc="Processing examples"):
             if len(top_20_ids) == 20:
                 break
 
-        # Step 7: Save
+        # Step 5: Save
         example_to_retrieved_map[example_id] = {
             "claim": claim,
             "intent": result["intent"],
             "pro_claim": pro_claim,
             "con_claim": con_claim,
-            "pro_evidence_ids": pro_evidence_ids,
-            "con_evidence_ids": con_evidence_ids,
             "top_20_evidences_ids": top_20_ids,
             "evidence_full_text": top_20_text
         }
@@ -145,7 +128,6 @@ for example in tqdm(all_examples, desc="Processing examples"):
 
     except Exception as e:
         print(f"Error on {example_id}: {e}")
-        import traceback
         traceback.print_exc()
         save_to_json(example_to_retrieved_map, output_file)
         continue
