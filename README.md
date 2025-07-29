@@ -8,6 +8,8 @@ This is a claim verification system based on multi-agent debate using the Llama3
 ├── requirements.txt
 ├── main.py
 ├── data/                    # Output directory for results
+├── eval/                    # Evaluation scripts
+│   └── eval.py             # Main evaluation script
 ├── chroma/
 │   ├── chroma_add.py
 │   ├── chroma_query.py
@@ -180,6 +182,78 @@ After the program completes, it will generate:
 - Number of examples being processed
 - Processing progress with tqdm
 - Final save confirmation with file path and processed count
+
+## Evaluation
+
+After running the main program and generating prediction results, you can evaluate the performance using the evaluation script.
+
+### Running Evaluation
+
+The evaluation script compares your prediction results against the groundtruth data:
+
+```bash
+# Evaluate a single prediction file
+python eval/eval.py --prediction /path/to/your/prediction.json
+
+# Evaluate multiple prediction files at once
+python eval/eval.py --prediction /path/to/pred1.json /path/to/pred2.json /path/to/pred3.json
+```
+
+### Evaluation Metrics
+
+The script provides comprehensive evaluation metrics:
+
+- **Overall Accuracy**: Percentage of correct predictions across all examples
+- **Class-wise Accuracy**: Accuracy for each class (TRUE, HALF-TRUE, FALSE)
+- **F1 Scores**: Precision, Recall, and F1 score for each class
+- **Macro-F1**: Average F1 score across all classes
+
+### Example Output
+
+```
+Groundtruth file: data/GT_test_all.json
+Prediction files: ['/path/to/prediction.json']
+================================================================================
+File: /path/to/prediction.json
+  Mode: single
+  Total examples compared: 400
+  Correct predictions: 320
+  Overall Accuracy: 80.00%
+
+  Class-wise Accuracy:
+    TRUE: 85.00% (85/100)
+    HALF-TRUE: 75.00% (75/100)
+    FALSE: 80.00% (160/200)
+
+  F1 Scores:
+    TRUE - Precision: 82.00%, Recall: 85.00%, F1: 83.47%
+    HALF-TRUE - Precision: 78.00%, Recall: 75.00%, F1: 76.47%
+    FALSE - Precision: 81.00%, Recall: 80.00%, F1: 80.50%
+  Macro-F1: 80.15%
+--------------------------------------------------------------------------------
+```
+
+### Supported Prediction Formats
+
+The evaluation script supports two prediction formats:
+
+1. **Single Format**: List of verdict strings
+   ```json
+   {
+     "example_id_1": ["[VERDICT]: TRUE"],
+     "example_id_2": ["[VERDICT]: FALSE"]
+   }
+   ```
+
+2. **Multi Format**: Dictionary with final_verdict field
+   ```json
+   {
+     "example_id_1": {"final_verdict": "[VERDICT]: TRUE"},
+     "example_id_2": {"final_verdict": "[VERDICT]: FALSE"}
+   }
+   ```
+
+The script automatically detects the format and extracts verdicts accordingly.
 
 ## System Requirements
 

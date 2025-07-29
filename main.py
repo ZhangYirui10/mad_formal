@@ -13,7 +13,6 @@ from agents.multi_agent_people import (
     opening_scientist, rebuttal_scientist, closing_scientist,
     judge_final_verdict as judge_final_verdict_people
 )
-import torch
 
 def run_single_agent(claim, evidence):
     return verify_claim(claim, evidence)
