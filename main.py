@@ -8,6 +8,11 @@ from agents.multi_agents import (
     opening_con, rebuttal_con, closing_con,
     judge_final_verdict
 )
+from agents.multi_agent_people import (
+    opening_politician, rebuttal_politician, closing_politician,
+    opening_scientist, rebuttal_scientist, closing_scientist,
+    judge_final_verdict as judge_final_verdict_people
+)
 import torch
 
 def run_single_agent(claim, evidence):
@@ -28,11 +33,28 @@ def run_multi_agent(claim, evidence):
         pro_close, con_close
     )
     return pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
+
+def run_multi_agent_people(claim, evidence):
+    print("\n=== Running Multi-Agent People Debate (Politician vs Scientist) ===")
+    pol_open = opening_politician(claim, evidence)
+    sci_open = opening_scientist(claim, evidence)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open)
+    pol_close = closing_politician(claim, evidence)
+    sci_close = closing_scientist(claim, evidence)
+    final_result = judge_final_verdict_people(
+        claim, evidence,
+        pol_open, sci_open,
+        pol_rebut, sci_rebut,
+        pol_close, sci_close
+    )
+    return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi"],
+        choices=["single", "multi", "multi_people"],
         default="single",
         help="Choose inference mode."
     )
@@ -67,54 +89,11 @@ def main():
             continue
 
         claim = example["claim"]
-        # evidence = example["evidence"]
         evidence = example["evidence_full_text"]
-        # evidence_pro_text = example["evidence_pro_text"]
-        # evidence_con_text = example["evidence_con_text"]
 
         if args.mode == "single":
             result = run_single_agent(claim, evidence)
             answer_map[example_id] = [result]
-
-        elif args.mode == "multi_role":
-            # Step 1: 推理 intent 和角色
-            intent, support_role, oppose_role = infer_intent_and_roles(claim)
-
-            # Step 2: Opening statements
-            pro_open = opening_pro(claim, evidence, role=support_role)
-            con_open = opening_con(claim, evidence, role=oppose_role)
-
-            # Step 3: Rebuttals
-            # pro_rebut = rebuttal_pro(claim, evidence, con_open)
-            # con_rebut = rebuttal_con(claim, evidence, pro_open)
-            pro_rebut = rebuttal_pro(claim, evidence, con_open, role=support_role)
-            con_rebut = rebuttal_con(claim, evidence, pro_open, role=oppose_role)
-
-            # Step 4: Closings
-            # pro_close = closing_pro(claim, evidence)
-            # con_close = closing_con(claim, evidence)
-            pro_close = closing_pro(claim, evidence, role=support_role)
-            con_close = closing_con(claim, evidence, role=oppose_role)
-
-            # Step 5: Judge verdict
-            final_result = judge_final_verdict(
-                claim, evidence,
-                pro_open, con_open,
-                pro_rebut, con_rebut,
-                pro_close, con_close
-            )
-            answer_map[example_id] = {
-                "intent": intent,
-                "support_role": support_role,
-                "oppose_role": oppose_role,
-                "pro_opening": pro_open,
-                "con_opening": con_open,
-                "pro_rebuttal": pro_rebut,
-                "con_rebuttal": con_rebut,
-                "pro_closing": pro_close,
-                "con_closing": con_close,
-                "final_verdict": final_result
-            }
 
         elif args.mode == "multi":
             pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence)
@@ -128,38 +107,15 @@ def main():
                 "final_verdict": final_result
             }
 
-        elif args.mode == "intent_enhanced_single_sep":
-            intent = infer_intent(claim)
-            result = final_verdict(claim, evidence, intent)
-            answer_map[example_id] = [result]
-
-        elif args.mode == "intent_enhanced_multi_sep":
-            evidence_transformed = f"### Pro-side Evidence:\n{evidence_pro_text}\n\n### Con-side Evidence:\n{evidence_con_text}"
-            pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence_transformed)
+        elif args.mode == "multi_people":
+            pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence)
             answer_map[example_id] = {
-                "pro_opening": pro_open,
-                "con_opening": con_open,
-                "pro_rebuttal": pro_rebut,
-                "con_rebuttal": con_rebut,
-                "pro_closing": pro_close,
-                "con_closing": con_close,
-                "final_verdict": final_result
-            }
-            
-        elif args.mode == "multi_3p":
-            (true_open, halftrue_open, false_open, 
-             true_rebut, halftrue_rebut, false_rebut,
-             true_close, halftrue_close, false_close, final_result) = run_multi_agent_3p(claim, evidence)
-            answer_map[example_id] = {
-                "true_opening": true_open,
-                "halftrue_opening": halftrue_open,
-                "false_opening": false_open,
-                "true_rebuttal": true_rebut,
-                "halftrue_rebuttal": halftrue_rebut,
-                "false_rebuttal": false_rebut,
-                "true_closing": true_close,
-                "halftrue_closing": halftrue_close,
-                "false_closing": false_close,
+                "pol_opening": pol_open,
+                "sci_opening": sci_open,
+                "pol_rebuttal": pol_rebut,
+                "sci_rebuttal": sci_rebut,
+                "pol_closing": pol_close,
+                "sci_closing": sci_close,
                 "final_verdict": final_result
             }
             
@@ -169,7 +125,4 @@ def main():
         print(f"Processed {len(answer_map)} examples")
 
 if __name__ == "__main__":
-    print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
-    print(">> Using CUDA device:", torch.cuda.current_device())
-    print(">> Device name:", torch.cuda.get_device_name(torch.cuda.current_device()))
     main()
