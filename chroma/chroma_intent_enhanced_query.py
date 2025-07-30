@@ -3,10 +3,42 @@ import sys
 import os
 import json
 import traceback
+import argparse
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from agents.intent_enhanced_retrieval import intent_enhanced_reformulation
+from agents.intent_enhanced_retrieval import intent_enhanced_reformulation, set_model_info
+from model.loader import load_model
+
+# Add command line argument parsing
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run intent enhanced retrieval with different models")
+    parser.add_argument(
+        "--model",
+        choices=["llama", "qwen", "gpt"],
+        default="qwen",
+        help="Choose model type: llama, qwen, or gpt (default: qwen)"
+    )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        help="Path to local model (for llama or qwen, optional, will use default if not specified)"
+    )
+    parser.add_argument(
+        "--api_key",
+        type=str,
+        help="OpenAI API key (required for gpt model)"
+    )
+    parser.add_argument(
+        "--gpt_model_name",
+        type=str,
+        default="gpt-4o-mini",
+        help="GPT model name (default: gpt-4o-mini)"
+    )
+    return parser.parse_args()
+
+# Parse arguments
+args = parse_args()
 
 # Fix paths - use relative paths from the script location
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,8 +59,8 @@ with open(evidence_file_path, "r") as f:
     evidence_id_to_text = json.load(f)
 print(f"Loaded {len(evidence_id_to_text)} evidence mappings")
 
-# Output file
-output_file = os.path.join(project_root, "data", "retrieved_evidence_bgebase_intent_enhanced.json")
+# Output file - include model type in filename
+output_file = os.path.join(project_root, "data", f"retrieved_evidence_bgebase_intent_enhanced_{args.model}.json")
 
 # Load or initialize output map
 if os.path.exists(output_file):
@@ -53,13 +85,26 @@ except Exception as e:
     sys.exit(1)
 
 # Test model loading
-print("Testing model loading...")
+print(f"Testing {args.model} model loading...")
 try:
+    # Load model based on arguments
+    if args.model == "gpt":
+        if not args.api_key:
+            raise ValueError("API key is required for GPT model. Use --api_key option.")
+        model_info = load_model(model_type=args.model, api_key=args.api_key, gpt_model_name=args.gpt_model_name)
+    elif args.model_path:
+        model_info = load_model(model_path=args.model_path, model_type=args.model)
+    else:
+        model_info = load_model(model_type=args.model)
+    
+    set_model_info(model_info)
+    
     test_claim = "This is a test claim."
     test_result = intent_enhanced_reformulation(test_claim)
-    print("Model loading successful.")
+    print(f"{args.model} model loading successful.")
 except Exception as e:
-    print(f"Model loading failed: {e}")
+    print(f"{args.model} model loading failed: {e}")
+    traceback.print_exc()
     sys.exit(1)
 
 for example in tqdm(all_examples, desc="Processing examples"):
