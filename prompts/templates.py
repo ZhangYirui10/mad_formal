@@ -156,27 +156,27 @@ Answer format:
 
 # === Intent Enhanced Reformulation ===
 def user_prompt_reformulate_pro(claim, intent):
-    return f"""You support the following claim and aim to reinforce its implied message.
+    return f"""You support the following claim and want to restate it in a way that clearly reflects your agreement with its message.
 
 Claim: "{claim}"
 
 Inferred Intent: "{intent}"
 
-Your task is to reformulate the claim in a way that makes the implied conclusion more explicit and persuasive.
+Your task is to rephrase the claim using a positive, supporting tone that affirms the claim’s main idea.
 
-Only output the reformulated claim directly, without any introductory phrases or explanations.
+Only output the reformulated claim directly, without extra explanations.
 
 Reformulated (Pro) Claim:"""
 
 def user_prompt_reformulate_con(claim, intent):
-    return f"""You oppose the following claim and aim to highlight any issues with its implied message.
+    return f"""You oppose the following claim and want to restate it in a way that clearly reflects your disagreement with its message.
 
 Claim: "{claim}"
 
 Inferred Intent: "{intent}"
 
-Your task is to reformulate the claim in a way that emphasizes its potential problems, uncertainties, or misleading assumptions.
+Your task is to rephrase the claim using a critical, opposing tone that challenges or rejects its main idea.
 
-Only output the reformulated claim directly, without any introductory phrases or explanations.
+Only output the reformulated claim directly, without extra explanations.
 
 Reformulated (Con) Claim:"""

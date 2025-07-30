@@ -28,7 +28,7 @@ with open(evidence_file_path, "r") as f:
 print(f"Loaded {len(evidence_id_to_text)} evidence mappings")
 
 # Output file
-output_file = os.path.join(project_root, "data", "retrieved_evidence_bgebase_intent_enhanced1.json")
+output_file = os.path.join(project_root, "data", "retrieved_evidence_bgebase_intent_enhanced.json")
 
 # Load or initialize output map
 if os.path.exists(output_file):
@@ -76,52 +76,62 @@ for example in tqdm(all_examples, desc="Processing examples"):
         pro_claim = result["reformulated_pro"]
         con_claim = result["reformulated_con"]
 
-        # Step 2: Query ChromaDB with pro_claim and con_claim only
-        pro_results = chroma_client.query_score(query_text=pro_claim, top_k=50, include=["metadatas", "distances"])
-        con_results = chroma_client.query_score(query_text=con_claim, top_k=50, include=["metadatas", "distances"])
+        # Step 2: Query ChromaDB with pro_claim and con_claim only (each gets 10 results)
+        pro_results = chroma_client.query(query_text=pro_claim, top_k=10, include=["metadatas"])
+        con_results = chroma_client.query(query_text=con_claim, top_k=10, include=["metadatas"])
 
-        # Step 3: Merge results with score and evidence_id
-        combined = []
-
-        # Check if results are not empty before processing
-        if pro_results["distances"] and pro_results["metadatas"]:
-            for score, meta in zip(pro_results["distances"][0], pro_results["metadatas"][0]):
-                combined.append({
-                    "evidence_id": meta["evidence_id"],
-                    "score": score
-                })
-
-        if con_results["distances"] and con_results["metadatas"]:
-            for score, meta in zip(con_results["distances"][0], con_results["metadatas"][0]):
-                combined.append({
-                    "evidence_id": meta["evidence_id"],
-                    "score": score
-                })
-
-        # Step 4: Sort by score (lower is better for distances) and deduplicate evidence_ids
-        seen = set()
-        top_20_ids = []
-        top_20_text = []
-        for item in sorted(combined, key=lambda x: x["score"]):
-            if item["evidence_id"] not in seen:
-                top_20_ids.append(item["evidence_id"])
-                evidence_id_str = str(item["evidence_id"])
+        # Step 3: Process pro results
+        pro_evidence_ids = []
+        pro_evidence_texts = []
+        if pro_results["metadatas"]:
+            for metadata in pro_results["metadatas"][0]:  # ChromaDB returns list of lists
+                evidence_id = metadata["evidence_id"]
+                evidence_id_str = str(evidence_id)
+                pro_evidence_ids.append(evidence_id)
                 if evidence_id_str in evidence_id_to_text:
-                    top_20_text.append(evidence_id_to_text[evidence_id_str])
+                    pro_evidence_texts.append(evidence_id_to_text[evidence_id_str])
                 else:
-                    top_20_text.append("Evidence not found")
-                seen.add(item["evidence_id"])
-            if len(top_20_ids) == 20:
-                break
+                    pro_evidence_texts.append("Evidence not found")
 
-        # Step 5: Save
+        # Step 4: Process con results
+        con_evidence_ids = []
+        con_evidence_texts = []
+        if con_results["metadatas"]:
+            for metadata in con_results["metadatas"][0]:  # ChromaDB returns list of lists
+                evidence_id = metadata["evidence_id"]
+                evidence_id_str = str(evidence_id)
+                con_evidence_ids.append(evidence_id)
+                if evidence_id_str in evidence_id_to_text:
+                    con_evidence_texts.append(evidence_id_to_text[evidence_id_str])
+                else:
+                    con_evidence_texts.append("Evidence not found")
+
+        # Step 5: Merge and deduplicate results using set
+        combined_ids = pro_evidence_ids + con_evidence_ids
+        combined_texts = pro_evidence_texts + con_evidence_texts
+        
+        seen = set()
+        final_evidence_ids = []
+        final_evidence_texts = []
+        
+        for evidence_id, evidence_text in zip(combined_ids, combined_texts):
+            if evidence_id not in seen:
+                final_evidence_ids.append(evidence_id)
+                final_evidence_texts.append(evidence_text)
+                seen.add(evidence_id)
+
+        # Step 6: Save
         example_to_retrieved_map[example_id] = {
             "claim": claim,
             "intent": result["intent"],
             "pro_claim": pro_claim,
             "con_claim": con_claim,
-            "top_20_evidences_ids": top_20_ids,
-            "evidence_full_text": top_20_text
+            "pro_evidence_ids": pro_evidence_ids,
+            "pro_evidence_texts": pro_evidence_texts,
+            "con_evidence_ids": con_evidence_ids,
+            "con_evidence_texts": con_evidence_texts,
+            "evidences_ids": final_evidence_ids,
+            "evidence_full_text": final_evidence_texts
         }
 
         save_to_json(example_to_retrieved_map, output_file)

@@ -90,8 +90,8 @@ python chroma_intent_enhanced_query.py
 This method:
 - First infers the intent of the claim
 - Reformulates the claim into pro (supporting) and con (opposing) versions
-- Searches separately with pro and con versions, then merges results
-- Sorts by similarity score and deduplicates to get top 20
+- Searches separately with pro and con versions, each retrieving top 10 results
+- Merges pro and con results and deduplicates to get final evidence set
 - Output file: `retrieved_evidence_bgebase_intent_enhanced.json`
 
 #### Method 3: Groundtruth Evidence Search
@@ -122,8 +122,8 @@ python main.py --mode single --input_file /path/to/your/data.json
 **Available Mode Options:**
 - `single`: Single agent mode
 - `multi`: Multi-agent debate mode (3 rounds)
-- `multi_role`: Role-based multi-agent mode
-- `multi_3p`: Three-party debate mode
+- `multi_role`: Role-based multi-agent mode with intent inference
+- `multi_people`: Multi-agent debate mode with politician vs scientist roles
 
 **Search Method Integration:**
 
@@ -155,7 +155,37 @@ python main.py --mode single --input_file data/full_evidence.json
 # Multi-agent debate mode with groundtruth evidence
 python main.py --mode multi --input_file data/full_evidence.json
 
+# Role-based multi-agent mode with groundtruth evidence
+python main.py --mode multi_role --input_file data/full_evidence.json
+
+# Multi-agent people mode with groundtruth evidence
+python main.py --mode multi_people --input_file data/full_evidence.json
 ```
+
+## Mode Descriptions
+
+### Single Agent Mode (`single`)
+- Uses a single agent to verify claims
+- Output: List containing the verification result
+- Fastest execution time
+
+### Multi-Agent Debate Mode (`multi`)
+- Implements a 3-round debate between Pro and Con agents
+- Rounds: Opening statements → Rebuttals → Closing statements → Final verdict
+- Output: Complete debate transcript with final verdict
+
+### Role-Based Multi-Agent Mode (`multi_role`)
+- **Step 1**: Infers the intent of the claim and determines appropriate roles for supporting and opposing agents
+- **Step 2-4**: Conducts 3-round debate with role-specific agents
+- **Step 5**: Final verdict by judge
+- Output: Intent inference, role assignments, complete debate transcript, and final verdict
+- Features: Dynamic role assignment based on claim intent
+
+### Multi-Agent People Mode (`multi_people`)
+- Debate between a Politician and a Scientist with distinct perspectives
+- Politician: Focuses on public opinion, policy implications, and practical considerations
+- Scientist: Emphasizes empirical evidence, methodology, and academic rigor
+- Output: Complete debate transcript with final verdict
 
 ## Output Results
 
@@ -175,6 +205,63 @@ After the program completes, it will generate:
 - The output filename is automatically generated based on the input filename
 - Format: `{input_filename}_answer_map_{mode}.json`
 - Example: If input file is `my_data.json` and mode is `single`, output will be `data/my_data_answer_map_single.json`
+
+**Output Format by Mode:**
+
+**Single Mode:**
+```json
+{
+  "example_id": ["[VERDICT]: TRUE"]
+}
+```
+
+**Multi Mode:**
+```json
+{
+  "example_id": {
+    "pro_opening": "...",
+    "con_opening": "...",
+    "pro_rebuttal": "...",
+    "con_rebuttal": "...",
+    "pro_closing": "...",
+    "con_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Multi-Role Mode:**
+```json
+{
+  "example_id": {
+    "intent": "The claim is about...",
+    "support_role": "Expert",
+    "oppose_role": "Skeptic",
+    "pro_opening": "...",
+    "con_opening": "...",
+    "pro_rebuttal": "...",
+    "con_rebuttal": "...",
+    "pro_closing": "...",
+    "con_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Multi-People Mode:**
+```json
+{
+  "example_id": {
+    "politician_opening": "...",
+    "scientist_opening": "...",
+    "politician_rebuttal": "...",
+    "scientist_rebuttal": "...",
+    "politician_closing": "...",
+    "scientist_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
 
 **Console Logs:**
 - Input file loading confirmation

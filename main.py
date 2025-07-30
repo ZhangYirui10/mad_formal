@@ -13,6 +13,16 @@ from agents.multi_agent_people import (
     opening_scientist, rebuttal_scientist, closing_scientist,
     judge_final_verdict as judge_final_verdict_people
 )
+from agents.multi_agent_role import (
+    infer_intent_and_roles,
+    opening_pro as opening_pro_role,
+    rebuttal_pro as rebuttal_pro_role,
+    closing_pro as closing_pro_role,
+    opening_con as opening_con_role,
+    rebuttal_con as rebuttal_con_role,
+    closing_con as closing_con_role,
+    judge_final_verdict as judge_final_verdict_role
+)
 
 def run_single_agent(claim, evidence):
     return verify_claim(claim, evidence)
@@ -49,11 +59,37 @@ def run_multi_agent_people(claim, evidence):
     )
     return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
 
+def run_multi_agent_role(claim, evidence):
+    print("\n=== Running Multi-Agent Role-Based Debate ===")
+    # Step 1: Infer intent and roles
+    intent, support_role, oppose_role = infer_intent_and_roles(claim)
+    
+    # Step 2: Opening statements
+    pro_open = opening_pro_role(claim, evidence, support_role)
+    con_open = opening_con_role(claim, evidence, oppose_role)
+    
+    # Step 3: Rebuttals
+    pro_rebut = rebuttal_pro_role(claim, evidence, con_open, support_role)
+    con_rebut = rebuttal_con_role(claim, evidence, pro_open, oppose_role)
+    
+    # Step 4: Closings
+    pro_close = closing_pro_role(claim, evidence, support_role)
+    con_close = closing_con_role(claim, evidence, oppose_role)
+    
+    # Step 5: Judge verdict
+    final_result = judge_final_verdict_role(
+        claim, evidence,
+        pro_open, con_open,
+        pro_rebut, con_rebut,
+        pro_close, con_close
+    )
+    return intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people"],
+        choices=["single", "multi", "multi_people", "multi_role"],
         default="single",
         help="Choose inference mode."
     )
@@ -106,15 +142,30 @@ def main():
                 "final_verdict": final_result
             }
 
+        elif args.mode == "multi_role":
+            intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_role(claim, evidence)
+            answer_map[example_id] = {
+                "intent": intent,
+                "support_role": support_role,
+                "oppose_role": oppose_role,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
+
         elif args.mode == "multi_people":
             pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence)
             answer_map[example_id] = {
-                "pol_opening": pol_open,
-                "sci_opening": sci_open,
-                "pol_rebuttal": pol_rebut,
-                "sci_rebuttal": sci_rebut,
-                "pol_closing": pol_close,
-                "sci_closing": sci_close,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
                 "final_verdict": final_result
             }
             
