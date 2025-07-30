@@ -109,16 +109,18 @@ for example in tqdm(all_examples, desc="Processing examples"):
         # Step 5: Merge and deduplicate results using set
         combined_ids = pro_evidence_ids + con_evidence_ids
         combined_texts = pro_evidence_texts + con_evidence_texts
-        
-        seen = set()
-        final_evidence_ids = []
+
+        # Use set to deduplicate IDs (this will lose order but match the desired approach)
+        final_evidence_ids = list(set(combined_ids))
+
+        # Get corresponding texts for deduplicated IDs
         final_evidence_texts = []
-        
-        for evidence_id, evidence_text in zip(combined_ids, combined_texts):
-            if evidence_id not in seen:
-                final_evidence_ids.append(evidence_id)
-                final_evidence_texts.append(evidence_text)
-                seen.add(evidence_id)
+        for evidence_id in final_evidence_ids:
+            evidence_id_str = str(evidence_id)
+            if evidence_id_str in evidence_id_to_text:
+                final_evidence_texts.append(evidence_id_to_text[evidence_id_str])
+            else:
+                final_evidence_texts.append("Evidence not found")
 
         # Step 6: Save
         example_to_retrieved_map[example_id] = {
