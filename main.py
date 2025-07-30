@@ -2,32 +2,20 @@ import argparse
 import json
 from tqdm import tqdm
 import os
-from agents.single_agent import verify_claim
-from agents.multi_agents import (
-    opening_pro, rebuttal_pro, closing_pro,
-    opening_con, rebuttal_con, closing_con,
-    judge_final_verdict
-)
-from agents.multi_agent_people import (
-    opening_politician, rebuttal_politician, closing_politician,
-    opening_scientist, rebuttal_scientist, closing_scientist,
-    judge_final_verdict as judge_final_verdict_people
-)
-from agents.multi_agent_role import (
-    infer_intent_and_roles,
-    opening_pro as opening_pro_role,
-    rebuttal_pro as rebuttal_pro_role,
-    closing_pro as closing_pro_role,
-    opening_con as opening_con_role,
-    rebuttal_con as rebuttal_con_role,
-    closing_con as closing_con_role,
-    judge_final_verdict as judge_final_verdict_role
-)
+from model.loader import load_model
 
-def run_single_agent(claim, evidence):
+def run_single_agent(claim, evidence, model_info):
+    from agents.single_agent import set_model_info, verify_claim
+    set_model_info(model_info)
     return verify_claim(claim, evidence)
 
-def run_multi_agent(claim, evidence):
+def run_multi_agent(claim, evidence, model_info):
+    from agents.multi_agents import (
+        set_model_info, opening_pro, rebuttal_pro, closing_pro,
+        opening_con, rebuttal_con, closing_con, judge_final_verdict
+    )
+    set_model_info(model_info)
+    
     print("\n=== Running Multi-Agent Debate (3 rounds) ===")
     pro_open = opening_pro(claim, evidence)
     con_open = opening_con(claim, evidence)
@@ -43,7 +31,14 @@ def run_multi_agent(claim, evidence):
     )
     return pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
 
-def run_multi_agent_people(claim, evidence):
+def run_multi_agent_people(claim, evidence, model_info):
+    from agents.multi_agent_people import (
+        set_model_info, opening_politician, rebuttal_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, closing_scientist,
+        judge_final_verdict as judge_final_verdict_people
+    )
+    set_model_info(model_info)
+    
     print("\n=== Running Multi-Agent People Debate (Politician vs Scientist) ===")
     pol_open = opening_politician(claim, evidence)
     sci_open = opening_scientist(claim, evidence)
@@ -59,7 +54,19 @@ def run_multi_agent_people(claim, evidence):
     )
     return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
 
-def run_multi_agent_role(claim, evidence):
+def run_multi_agent_role(claim, evidence, model_info):
+    from agents.multi_agent_role import (
+        set_model_info, infer_intent_and_roles,
+        opening_pro as opening_pro_role,
+        rebuttal_pro as rebuttal_pro_role,
+        closing_pro as closing_pro_role,
+        opening_con as opening_con_role,
+        rebuttal_con as rebuttal_con_role,
+        closing_con as closing_con_role,
+        judge_final_verdict as judge_final_verdict_role
+    )
+    set_model_info(model_info)
+    
     print("\n=== Running Multi-Agent Role-Based Debate ===")
     # Step 1: Infer intent and roles
     intent, support_role, oppose_role = infer_intent_and_roles(claim)
@@ -94,6 +101,22 @@ def main():
         help="Choose inference mode."
     )
     parser.add_argument(
+        "--model",
+        choices=["llama", "qwen", "gpt"],
+        default="llama",
+        help="Choose model type: llama, qwen, or gpt"
+    )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        help="Path to local model (for llama or qwen)"
+    )
+    parser.add_argument(
+        "--api_key",
+        type=str,
+        help="OpenAI API key (required for gpt model)"
+    )
+    parser.add_argument(
         "--input_file",
         type=str,
         required=True,
@@ -101,17 +124,31 @@ def main():
     )
     args = parser.parse_args()
 
+    print(f"Loading {args.model} model...")
+    if args.model == "gpt":
+        if not args.api_key:
+            raise ValueError("API key is required for GPT model. Use --api_key option.")
+        model_info = load_model(model_type=args.model, api_key=args.api_key)
+    elif args.model == "qwen":
+        model_path = args.model_path or "Qwen/Qwen2.5-7B-Instruct"
+        model_info = load_model(model_path=model_path, model_type=args.model)
+    else:  # llama
+        model_path = args.model_path
+        model_info = load_model(model_path=model_path, model_type=args.model)
+    
+    print(f"Model loaded successfully: {args.model}")
+
     # Load input file
     print(f"Loading input file: {args.input_file}")
     with open(args.input_file, "r") as f:
         all_examples = json.load(f)
     
-    # Generate output filename based on input filename
+    # Generate output filename based on input filename and model
     input_basename = os.path.splitext(os.path.basename(args.input_file))[0]
-    output_file = os.path.join("data", f"{input_basename}_answer_map_{args.mode}.json")
+    output_file = os.path.join("data", f"{input_basename}_answer_map_{args.mode}_{args.model}.json")
     
     print(f"Output will be saved to: {output_file}")
-    print(f"Processing {len(all_examples)} examples in {args.mode} mode")
+    print(f"Processing {len(all_examples)} examples in {args.mode} mode with {args.model} model")
 
     try:
         with open(output_file, "r") as f:
@@ -119,7 +156,7 @@ def main():
     except FileNotFoundError:
         answer_map = {}
 
-    for example_id, example in tqdm(all_examples.items(), desc=f"Processing examples ({args.mode})"):
+    for example_id, example in tqdm(all_examples.items(), desc=f"Processing examples ({args.mode} + {args.model})"):
         if example_id in answer_map:
             continue
 
@@ -127,11 +164,11 @@ def main():
         evidence = example["evidence_full_text"]
 
         if args.mode == "single":
-            result = run_single_agent(claim, evidence)
+            result = run_single_agent(claim, evidence, model_info)
             answer_map[example_id] = [result]
 
         elif args.mode == "multi":
-            pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence)
+            pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence, model_info)
             answer_map[example_id] = {
                 "pro_opening": pro_open,
                 "con_opening": con_open,
@@ -143,7 +180,7 @@ def main():
             }
 
         elif args.mode == "multi_role":
-            intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_role(claim, evidence)
+            intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_role(claim, evidence, model_info)
             answer_map[example_id] = {
                 "intent": intent,
                 "support_role": support_role,
@@ -158,7 +195,7 @@ def main():
             }
 
         elif args.mode == "multi_people":
-            pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence)
+            pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
             answer_map[example_id] = {
                 "politician_opening": pol_open,
                 "scientist_opening": sci_open,
