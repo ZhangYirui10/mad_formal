@@ -89,8 +89,10 @@ print(f"Testing {args.model} model loading...")
 try:
     # Load model based on arguments
     if args.model == "gpt":
-        if not args.api_key:
-            raise ValueError("API key is required for GPT model. Use --api_key option.")
+        # Use provided API key or try to get from .env file
+        api_key = args.api_key or os.getenv("single_full")
+        if not api_key:
+            raise ValueError("OpenAI API key not found. Please set single_full in .env file or pass it as --api_key option.")
         model_info = load_model(model_type=args.model, api_key=args.api_key, gpt_model_name=args.gpt_model_name)
     elif args.model_path:
         model_info = load_model(model_path=args.model_path, model_type=args.model)
