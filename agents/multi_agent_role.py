@@ -58,6 +58,133 @@ def run_model(system_prompt: str, user_prompt: str, max_tokens: int = 300):
     else:
         raise ValueError("Invalid model_info format")
 
+def run_model_batch(system_prompts: list, user_prompts: list, max_tokens: int = 300):
+    """Run model inference in batch for Qwen model"""
+    if model_info is None:
+        raise ValueError("Model not loaded. Please call set_model_info() first.")
+    
+    if len(model_info) == 2:
+        first, second = model_info
+        if hasattr(first, 'chat') and hasattr(first.chat, 'completions'):
+            # GPT model - process individually
+            results = []
+            for sys_prompt, usr_prompt in zip(system_prompts, user_prompts):
+                result = run_model(sys_prompt, usr_prompt, max_tokens)
+                results.append(result)
+            return results
+        else:
+            # Qwen model - batch processing
+            tokenizer, model = model_info
+            full_prompts = []
+            for sys_prompt, usr_prompt in zip(system_prompts, user_prompts):
+                full_prompt = f"<|begin_of_text|><|system|>\n{sys_prompt}\n<|user|>\n{usr_prompt}<|assistant|>\n"
+                full_prompts.append(full_prompt)
+            
+            # Tokenize all prompts
+            inputs = tokenizer(full_prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+            
+            # Generate in batch
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                do_sample=False,
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.eos_token_id,
+                use_cache=True
+            )
+            
+            # Decode all outputs
+            responses = []
+            for i, output in enumerate(outputs):
+                response = tokenizer.decode(output, skip_special_tokens=True)
+                # Extract assistant response
+                if "<|assistant|>" in response:
+                    response = response.split("<|assistant|>")[-1].strip()
+                responses.append(response)
+            
+            return responses
+    
+    else:
+        raise ValueError("Invalid model_info format")
+
+def run_multi_agent_role_batch(claims, evidences, batch_size=8):
+    """Run multi-agent role-based debate in batch for Qwen model"""
+    if model_info is None:
+        raise ValueError("Model not loaded. Please call set_model_info() first.")
+    
+    results = []
+    for i in range(0, len(claims), batch_size):
+        batch_claims = claims[i:i+batch_size]
+        batch_evidences = evidences[i:i+batch_size]
+        
+        batch_results = []
+        for claim, evidence in zip(batch_claims, batch_evidences):
+            # Step 1: Infer intent and roles
+            intent, support_role, oppose_role = infer_intent_and_roles(claim)
+            
+            # Generate prompts
+            pro_open_prompt = user_prompt_opening_pro(claim, evidence, support_role)
+            con_open_prompt = user_prompt_opening_con(claim, evidence, oppose_role)
+            
+            # Batch process opening statements
+            system_prompt = get_system_prompt("debater")
+            opening_results = run_model_batch(
+                [system_prompt] * 2, 
+                [pro_open_prompt, con_open_prompt]
+            )
+            pro_open, con_open = opening_results
+            
+            # Generate rebuttal prompts
+            pro_rebut_prompt = user_prompt_rebuttal_pro(claim, evidence, con_open, support_role)
+            con_rebut_prompt = user_prompt_rebuttal_con(claim, evidence, pro_open, oppose_role)
+            
+            # Batch process rebuttals
+            rebuttal_results = run_model_batch(
+                [system_prompt] * 2,
+                [pro_rebut_prompt, con_rebut_prompt]
+            )
+            pro_rebut, con_rebut = rebuttal_results
+            
+            # Generate closing prompts
+            pro_close_prompt = user_prompt_closing_pro(claim, evidence, support_role)
+            con_close_prompt = user_prompt_closing_con(claim, evidence, oppose_role)
+            
+            # Batch process closings
+            closing_results = run_model_batch(
+                [system_prompt] * 2,
+                [pro_close_prompt, con_close_prompt]
+            )
+            pro_close, con_close = closing_results
+            
+            # Generate judge prompt
+            judge_prompt = user_prompt_judge_full(
+                claim, evidence,
+                pro_open, con_open,
+                pro_rebut, con_rebut,
+                pro_close, con_close
+            )
+            
+            # Process judge verdict
+            judge_system = get_system_prompt("judge")
+            final_result = run_model(judge_system, judge_prompt, max_tokens=400)
+            
+            batch_results.append({
+                "intent": intent,
+                "support_role": support_role,
+                "oppose_role": oppose_role,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            })
+        
+        results.extend(batch_results)
+    
+    return results
+
 # === Step 1: Infer intent and roles ===
 def infer_intent_and_roles(claim):
     intent_prompt = user_prompt_intent_inference(claim)
