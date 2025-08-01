@@ -18,4 +18,4 @@ conda activate mad_debate
 mkdir -p logs
 
 # 执行命令
-python -u main.py --mode multi_people_2r --model llama --input_file data/matching_evidence.json 
+python -u main.py --mode multi_people_2r --model llama --input_file data/matching_evidence_full.json 
