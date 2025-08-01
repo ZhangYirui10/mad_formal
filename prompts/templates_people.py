@@ -222,8 +222,8 @@ Scientist's closing: {con_close}
 Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
 
 You MUST respond in exactly this format:
-[VERDICT]: TRUE / FALSE / HALF-TRUE
 [REASON]: <your explanation>
+[VERDICT]: TRUE / FALSE / HALF-TRUE
 
 Make the verdict in the last line.
 """

@@ -1,3 +1,4 @@
 chroma/chroma_store/
 chroma_store/
 model/llama3-8b-instruct/
+data_store/

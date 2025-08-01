@@ -32,27 +32,38 @@ def run_multi_agent(claim, evidence, model_info):
     return pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
 
 def run_multi_agent_people(claim, evidence, model_info):
-    from agents.multi_agent_people import (
-        set_model_info, opening_politician, rebuttal_politician, closing_politician,
+    from agents.multi_agent_people_3 import (
+        set_model_info, opening_journalist, rebuttal_journalist, closing_journalist,
+        opening_politician, rebuttal_politician, closing_politician,
         opening_scientist, rebuttal_scientist, closing_scientist,
         judge_final_verdict as judge_final_verdict_people
     )
     set_model_info(model_info)
     
-    print("\n=== Running Multi-Agent People Debate (Politician vs Scientist) ===")
-    pol_open = opening_politician(claim, evidence)
-    sci_open = opening_scientist(claim, evidence)
-    pol_rebut = rebuttal_politician(claim, evidence, sci_open)
-    sci_rebut = rebuttal_scientist(claim, evidence, pol_open)
-    pol_close = closing_politician(claim, evidence)
-    sci_close = closing_scientist(claim, evidence)
+    print("\n=== Running Multi-Agent People Debate (Journalist → Politician → Scientist) ===")
+    
+    # Opening statements: Journalist → Politician → Scientist
+    jour_open = opening_journalist(claim, evidence)
+    pol_open = opening_politician(claim, evidence, jour_open)
+    sci_open = opening_scientist(claim, evidence, jour_open)
+    
+    # Rebuttal statements: Journalist → Politician → Scientist
+    jour_rebut = rebuttal_journalist(claim, evidence, pol_open, sci_open)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open, jour_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open, jour_open)
+    
+    # Closing statements: Journalist → Politician → Scientist
+    jour_close = closing_journalist(claim, evidence, pol_rebut, sci_rebut)
+    pol_close = closing_politician(claim, evidence, jour_rebut)
+    sci_close = closing_scientist(claim, evidence, jour_rebut)
+    
     final_result = judge_final_verdict_people(
         claim, evidence,
-        pol_open, sci_open,
-        pol_rebut, sci_rebut,
-        pol_close, sci_close
+        jour_open, pol_open, sci_open,
+        jour_rebut, pol_rebut, sci_rebut,
+        jour_close, pol_close, sci_close
     )
-    return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
+    return jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result
 
 def run_multi_agent_role(claim, evidence, model_info):
     from agents.multi_agent_role import (
@@ -92,11 +103,45 @@ def run_multi_agent_role(claim, evidence, model_info):
     )
     return intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
 
+def run_multi_agent_people_3(claim, evidence, model_info):
+    from agents.multi_agent_people_3 import (
+        set_model_info, opening_journalist, rebuttal_journalist, closing_journalist,
+        opening_politician, rebuttal_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, closing_scientist,
+        judge_final_verdict as judge_final_verdict_people_3
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People 3 Debate (Journalist → Politician → Scientist) ===")
+    
+    # Opening statements: Journalist → Politician → Scientist
+    jour_open = opening_journalist(claim, evidence)
+    pol_open = opening_politician(claim, evidence, jour_open)
+    sci_open = opening_scientist(claim, evidence, jour_open)
+    
+    # Rebuttal statements: Journalist → Politician → Scientist
+    jour_rebut = rebuttal_journalist(claim, evidence, pol_open, sci_open)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open, jour_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open, jour_open)
+    
+    # Closing statements: Journalist → Politician → Scientist
+    jour_close = closing_journalist(claim, evidence, pol_rebut, sci_rebut)
+    pol_close = closing_politician(claim, evidence, jour_rebut)
+    sci_close = closing_scientist(claim, evidence, jour_rebut)
+    
+    final_result = judge_final_verdict_people_3(
+        claim, evidence,
+        jour_open, pol_open, sci_open,
+        jour_rebut, pol_rebut, sci_rebut,
+        jour_close, pol_close, sci_close
+    )
+    return jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_role"],
+        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role"],
         default="single",
         help="Choose inference mode."
     )
@@ -195,12 +240,30 @@ def main():
             }
 
         elif args.mode == "multi_people":
-            pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
+            jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
             answer_map[example_id] = {
+                "journalist_opening": jour_open,
                 "politician_opening": pol_open,
                 "scientist_opening": sci_open,
+                "journalist_rebuttal": jour_rebut,
                 "politician_rebuttal": pol_rebut,
                 "scientist_rebuttal": sci_rebut,
+                "journalist_closing": jour_close,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_3":
+            jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result = run_multi_agent_people_3(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "journalist_opening": jour_open,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "journalist_rebuttal": jour_rebut,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "journalist_closing": jour_close,
                 "politician_closing": pol_close,
                 "scientist_closing": sci_close,
                 "final_verdict": final_result
