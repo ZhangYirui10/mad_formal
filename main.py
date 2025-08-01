@@ -95,6 +95,21 @@ def run_multi_agent_people(claim, evidence, model_info):
     )
     return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
 
+def run_multi_agent_people_intent(claim, evidence, model_info):
+    from agents.multi_agent_people_intent import (
+        set_model_info, run_multi_agent_people
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People Intent Debate (Politician vs Scientist with Intent-Enhanced Reformulation) ===")
+    result = run_multi_agent_people(claim, evidence)
+    
+    return (result["intent"], result["reformulated_pro"], result["reformulated_con"],
+            result["politician_opening"], result["scientist_opening"],
+            result["politician_rebuttal"], result["scientist_rebuttal"],
+            result["politician_closing"], result["scientist_closing"],
+            result["final_verdict"])
+
 def run_multi_agent_role(claim, evidence, model_info):
     from agents.multi_agent_role import (
         set_model_info, infer_intent_and_roles,
@@ -166,6 +181,48 @@ def run_multi_agent_people_3(claim, evidence, model_info):
         jour_close, pol_close, sci_close
     )
     return jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result
+
+def run_multi_agent_people_3_intent(claim, evidence, model_info):
+    from agents.multi_agent_people_3_intent import (
+        set_model_info, infer_intent, reformulate_claim_pro, reformulate_claim_con,
+        opening_journalist, rebuttal_journalist, closing_journalist,
+        opening_politician, rebuttal_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, closing_scientist,
+        judge_final_verdict
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People 3 Intent Debate (Journalist → Politician → Scientist with Intent Inference) ===")
+    
+    # Step 1: Infer intent and reformulate claims
+    intent = infer_intent(claim)
+    pro_claim = reformulate_claim_pro(claim, intent)
+    con_claim = reformulate_claim_con(claim, intent)
+    
+    # Step 2: Opening statements: Journalist → Politician → Scientist
+    jour_open = opening_journalist(claim, evidence)
+    pol_open = opening_politician(pro_claim, evidence, jour_open)
+    sci_open = opening_scientist(con_claim, evidence, jour_open)
+    
+    # Step 3: Rebuttal statements: Journalist → Politician → Scientist
+    jour_rebut = rebuttal_journalist(claim, evidence, pol_open, sci_open)
+    pol_rebut = rebuttal_politician(pro_claim, evidence, sci_open, jour_open)
+    sci_rebut = rebuttal_scientist(con_claim, evidence, pol_open, jour_open)
+    
+    # Step 4: Closing statements: Journalist → Politician → Scientist
+    jour_close = closing_journalist(claim, evidence, pol_rebut, sci_rebut)
+    pol_close = closing_politician(pro_claim, evidence, jour_rebut)
+    sci_close = closing_scientist(con_claim, evidence, jour_rebut)
+    
+    # Step 5: Judge verdict
+    final_result = judge_final_verdict(
+        claim, evidence,
+        jour_open, pol_open, sci_open,
+        jour_rebut, pol_rebut, sci_rebut,
+        jour_close, pol_close, sci_close
+    )
+    
+    return intent, pro_claim, con_claim, jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result
 
 def run_four_agents(claim, evidence, model_info):
     from agents.four_agents import (
@@ -304,11 +361,63 @@ def run_multi_agent_stance_3_batch(claims, evidences, model_info, batch_size=8):
     set_model_info(model_info)
     return run_stance_3_batch(claims, evidences, batch_size)
 
+def run_multi_agent_intent(claim, evidence, model_info):
+    from agents.multi_agents_intent import set_model_info, run_multi_agent_intent as run_multi_intent
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent Intent Debate (Pro vs Con with Intent-Enhanced Reformulation) ===")
+    result = run_multi_intent(claim, evidence)
+    
+    return (result["intent"], result["reformulated_pro"], result["reformulated_con"],
+            result["pro_opening"], result["con_opening"],
+            result["pro_rebuttal"], result["con_rebuttal"],
+            result["pro_closing"], result["con_closing"],
+            result["final_verdict"])
+
+def run_multi_agent_stance_3_intent(claim, evidence, model_info):
+    from agents.multi_agents_stance_3_intent import set_model_info, run_multi_agent_stance_3_intent as run_stance_3_intent
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent Stance 3 Intent Debate (Pro vs Con vs Flexible with Intent-Enhanced Reformulation) ===")
+    result = run_stance_3_intent(claim, evidence)
+    
+    return (result["intent"], result["reformulated_pro"], result["reformulated_con"],
+            result["flexible_opening"], result["pro_opening"], result["con_opening"],
+            result["flexible_rebuttal"], result["pro_rebuttal"], result["con_rebuttal"],
+            result["flexible_closing"], result["pro_closing"], result["con_closing"],
+            result["final_verdict"])
+
+def run_four_agents_intent(claim, evidence, model_info):
+    from agents.four_agents_intent import set_model_info, run_four_agents_intent as run_four_intent
+    set_model_info(model_info)
+    
+    print("\n=== Running 4-Agent Intent Debate (Pro1 vs Pro2 vs Con1 vs Con2 with Intent-Enhanced Reformulation) ===")
+    result = run_four_intent(claim, evidence)
+    
+    return (result["intent"], result["reformulated_pro"], result["reformulated_con"],
+            result["pro1_opening"], result["pro2_opening"], result["con1_opening"], result["con2_opening"],
+            result["pro1_rebuttal"], result["pro2_rebuttal"], result["con1_rebuttal"], result["con2_rebuttal"],
+            result["pro1_closing"], result["pro2_closing"], result["con1_closing"], result["con2_closing"],
+            result["final_verdict"])
+
+def run_four_agents_people_intent(claim, evidence, model_info):
+    from agents.four_agents_people_intent import set_model_info, run_four_agents_people_intent as run_four_people_intent
+    set_model_info(model_info)
+    
+    print("\n=== Running 4-Agent People Intent Debate (Politician vs Scientist vs Journalist vs Domain Scientist with Intent-Enhanced Reformulation) ===")
+    result = run_four_people_intent(claim, evidence)
+    
+    return (result["intent"], result["reformulated_pro"], result["reformulated_con"], result["domain_specialist"],
+            result["politician_opening"], result["scientist_opening"], result["journalist_opening"], result["domain_scientist_opening"],
+            result["politician_rebuttal"], result["scientist_rebuttal"], result["journalist_rebuttal"], result["domain_scientist_rebuttal"],
+            result["politician_closing"], result["scientist_closing"], result["journalist_closing"], result["domain_scientist_closing"],
+            result["final_verdict"])
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "multi_stance_3", "multi_party", "four_agents", "four_agents_people"],
+        choices=["single", "multi", "multi_people", "multi_people_intent", "multi_people_3", "multi_people_3_intent", "multi_role", "multi_stance_3", "multi_party", "four_agents", "four_agents_people", "multi_intent", "multi_stance_3_intent", "four_agents_intent", "four_agents_people_intent"],
         default="single",
         help="Choose inference mode."
     )
@@ -439,9 +548,42 @@ def main():
                 "final_verdict": final_result
             }
 
+        elif args.mode == "multi_people_intent":
+            intent, reformulated_pro, reformulated_con, pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "reformulated_pro": reformulated_pro,
+                "reformulated_con": reformulated_con,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
         elif args.mode == "multi_people_3":
             jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result = run_multi_agent_people_3(claim, evidence, model_info)
             answer_map[example_id] = {
+                "journalist_opening": jour_open,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "journalist_rebuttal": jour_rebut,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "journalist_closing": jour_close,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_3_intent":
+            intent, pro_claim, con_claim, jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result = run_multi_agent_people_3_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "pro_claim": pro_claim,
+                "con_claim": con_claim,
                 "journalist_opening": jour_open,
                 "politician_opening": pol_open,
                 "scientist_opening": sci_open,
@@ -504,7 +646,83 @@ def main():
                 "journalist_closing": jour_close,
                 "domain_scientist_closing": dom_close,
                 "final_verdict": final_result
-            }     
+            }
+
+        elif args.mode == "multi_intent":
+            intent, reformulated_pro, reformulated_con, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "reformulated_pro": reformulated_pro,
+                "reformulated_con": reformulated_con,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_stance_3_intent":
+            intent, reformulated_pro, reformulated_con, flex_open, pro_open, con_open, flex_rebut, pro_rebut, con_rebut, flex_close, pro_close, con_close, final_result = run_multi_agent_stance_3_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "reformulated_pro": reformulated_pro,
+                "reformulated_con": reformulated_con,
+                "flexible_opening": flex_open,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "flexible_rebuttal": flex_rebut,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "flexible_closing": flex_close,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "four_agents_intent":
+            intent, reformulated_pro, reformulated_con, pro1_open, pro2_open, con1_open, con2_open, pro1_rebut, pro2_rebut, con1_rebut, con2_rebut, pro1_close, pro2_close, con1_close, con2_close, final_result = run_four_agents_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "reformulated_pro": reformulated_pro,
+                "reformulated_con": reformulated_con,
+                "pro1_opening": pro1_open,
+                "pro2_opening": pro2_open,
+                "con1_opening": con1_open,
+                "con2_opening": con2_open,
+                "pro1_rebuttal": pro1_rebut,
+                "pro2_rebuttal": pro2_rebut,
+                "con1_rebuttal": con1_rebut,
+                "con2_rebuttal": con2_rebut,
+                "pro1_closing": pro1_close,
+                "pro2_closing": pro2_close,
+                "con1_closing": con1_close,
+                "con2_closing": con2_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "four_agents_people_intent":
+            intent, reformulated_pro, reformulated_con, domain_specialist, pol_open, sci_open, jour_open, dom_open, pol_rebut, sci_rebut, jour_rebut, dom_rebut, pol_close, sci_close, jour_close, dom_close, final_result = run_four_agents_people_intent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "reformulated_pro": reformulated_pro,
+                "reformulated_con": reformulated_con,
+                "domain_specialist": domain_specialist,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "journalist_opening": jour_open,
+                "domain_scientist_opening": dom_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "journalist_rebuttal": jour_rebut,
+                "domain_scientist_rebuttal": dom_rebut,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "journalist_closing": jour_close,
+                "domain_scientist_closing": dom_close,
+                "final_verdict": final_result
+            }
            
         # Save final results
         with open(output_file, "w") as f:
