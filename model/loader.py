@@ -37,7 +37,9 @@ def load_model(model_path=None, model_type="llama", api_key=None, gpt_model_name
     
     elif model_type == "gpt":
         if api_key is None:
-            raise ValueError("API key is required for GPT model")
+            api_key = os.getenv("single_full")
+            if api_key is None:
+                raise ValueError("OpenAI API key not found. Please set OPENAI_API_KEY in .env file or pass it as api_key parameter")
         try:
             from openai import OpenAI
             client = OpenAI(api_key=api_key)
