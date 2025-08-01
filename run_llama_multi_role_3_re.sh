@@ -18,4 +18,4 @@ conda activate mad_debate
 mkdir -p logs
 
 # 执行任务 - 使用llama模型进行多人关系抽取
-python main.py --mode multi_people_3 --model llama --input_file data/full_evidence.json
+python main.py --mode multi_role_3 --model llama --input_file data/retrieved_evidence_bgebase.json
