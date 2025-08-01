@@ -77,12 +77,21 @@ def load_predictions(file_path):
                 verdict = extract_final_verdict(result_text)
                 if verdict:
                     predictions[example_id] = verdict
+                else:
+                    # 对于无法提取verdict的条目，给予默认值'unknown'
+                    predictions[example_id] = 'unknown'
             # 检查是否是列表格式
             elif isinstance(result_dict, list) and len(result_dict) > 0:
                 result_text = result_dict[0]
                 verdict = extract_final_verdict(result_text)
                 if verdict:
                     predictions[example_id] = verdict
+                else:
+                    # 对于无法提取verdict的条目，给予默认值'unknown'
+                    predictions[example_id] = 'unknown'
+            else:
+                # 对于其他格式，给予默认值'unknown'
+                predictions[example_id] = 'unknown'
                     
     except Exception as e:
         print(f"加载预测文件时出错: {e}")
@@ -130,7 +139,13 @@ def calculate_metrics(predictions, ground_truth):
     
     for example_id in sorted(common_ids):
         y_true.append(ground_truth[example_id])
-        y_pred.append(predictions[example_id])
+        pred = predictions[example_id]
+        # 如果预测是'unknown'，将其视为错误预测
+        if pred == 'unknown':
+            # 给一个不可能的值，确保它会被算作错误
+            y_pred.append('impossible_prediction')
+        else:
+            y_pred.append(pred)
     
     # 计算指标
     acc = accuracy_score(y_true, y_pred)
@@ -153,7 +168,7 @@ def calculate_metrics(predictions, ground_truth):
 
 def main():
     # 文件路径
-    predictions_file = "/home/qqs/mad_formal1/data/full_evidence_answer_map_multi_people_3_qwen.json"
+    predictions_file = "/home/qqs/mad_formal1/data/retrieved_evidence_bgebase_answer_map_multi_people_3_gpt.json"
     
     ground_truth_files = [
         "/home/qqs/mad_formal1/data/test.json"
