@@ -9,19 +9,6 @@ def run_single_agent(claim, evidence, model_info):
     set_model_info(model_info)
     return verify_claim(claim, evidence)
 
-def run_single_agent_batch(claims, evidences, model_info, batch_size=8):
-    from agents.single_agent import set_model_info, verify_claims_batch
-    set_model_info(model_info)
-    
-    results = []
-    for i in range(0, len(claims), batch_size):
-        batch_claims = claims[i:i+batch_size]
-        batch_evidences = evidences[i:i+batch_size]
-        batch_results = verify_claims_batch(batch_claims, batch_evidences)
-        results.extend(batch_results)
-    
-    return results
-
 def run_multi_agent(claim, evidence, model_info):
     from agents.multi_agents import (
         set_model_info, opening_pro, rebuttal_pro, closing_pro,
@@ -43,11 +30,6 @@ def run_multi_agent(claim, evidence, model_info):
         pro_close, con_close
     )
     return pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
-
-def run_multi_agent_batch(claims, evidences, model_info, batch_size=8):
-    from agents.multi_agents import set_model_info, run_multi_agent_batch as run_multi_batch
-    set_model_info(model_info)
-    return run_multi_batch(claims, evidences, batch_size)
 
 def run_multi_agent_people(claim, evidence, model_info):
     from agents.multi_agent_people import (
@@ -71,11 +53,6 @@ def run_multi_agent_people(claim, evidence, model_info):
         pol_close, sci_close
     )
     return pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result
-
-def run_multi_agent_people_batch(claims, evidences, model_info, batch_size=8):
-    from agents.multi_agent_people import set_model_info, run_multi_agent_people_batch as run_people_batch
-    set_model_info(model_info)
-    return run_people_batch(claims, evidences, batch_size)
 
 def run_multi_agent_role(claim, evidence, model_info):
     from agents.multi_agent_role import (
@@ -115,10 +92,39 @@ def run_multi_agent_role(claim, evidence, model_info):
     )
     return intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
 
-def run_multi_agent_role_batch(claims, evidences, model_info, batch_size=8):
-    from agents.multi_agent_role import set_model_info, run_multi_agent_role_batch as run_role_batch
+def run_multi_agent_people_3(claim, evidence, model_info):
+    from agents.multi_agent_people_3 import (
+        set_model_info, opening_journalist, rebuttal_journalist, closing_journalist,
+        opening_politician, rebuttal_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, closing_scientist,
+        judge_final_verdict as judge_final_verdict_people_3
+    )
     set_model_info(model_info)
-    return run_role_batch(claims, evidences, batch_size)
+    
+    print("\n=== Running Multi-Agent People 3 Debate (Journalist → Politician → Scientist) ===")
+    
+    # Opening statements: Journalist → Politician → Scientist
+    jour_open = opening_journalist(claim, evidence)
+    pol_open = opening_politician(claim, evidence, jour_open)
+    sci_open = opening_scientist(claim, evidence, jour_open)
+    
+    # Rebuttal statements: Journalist → Politician → Scientist
+    jour_rebut = rebuttal_journalist(claim, evidence, pol_open, sci_open)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open, jour_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open, jour_open)
+    
+    # Closing statements: Journalist → Politician → Scientist
+    jour_close = closing_journalist(claim, evidence, pol_rebut, sci_rebut)
+    pol_close = closing_politician(claim, evidence, jour_rebut)
+    sci_close = closing_scientist(claim, evidence, jour_rebut)
+    
+    final_result = judge_final_verdict_people_3(
+        claim, evidence,
+        jour_open, pol_open, sci_open,
+        jour_rebut, pol_rebut, sci_rebut,
+        jour_close, pol_close, sci_close
+    )
+    return jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result
 
 def run_four_agents(claim, evidence, model_info):
     from agents.four_agents import (
@@ -161,16 +167,57 @@ def run_four_agents(claim, evidence, model_info):
             pro1_close, pro2_close, con1_close, con2_close,
             final_result)
 
-def run_four_agents_batch(claims, evidences, model_info, batch_size=8):
-    from agents.four_agents import set_model_info, run_four_agents_batch as run_four_batch
+def run_four_agents_people(claim, evidence, model_info):
+    from agents.four_agents_people import (
+        set_model_info, opening_politician, rebuttal_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, closing_scientist,
+        opening_journalist, rebuttal_journalist, closing_journalist,
+        opening_domain_scientist, rebuttal_domain_scientist, closing_domain_scientist,
+        judge_final_verdict, infer_domain_specialist
+    )
     set_model_info(model_info)
-    return run_four_batch(claims, evidences, batch_size)
+    
+    print("\n=== Running 4-Agent People Debate (Politician vs Scientist vs Journalist vs Domain Scientist) ===")
+    
+    # Step 1: Infer domain specialist for this claim
+    domain_specialist = infer_domain_specialist(claim)
+    
+    # Step 2: Opening statements
+    pol_open = opening_politician(claim, evidence)
+    sci_open = opening_scientist(claim, evidence)
+    jour_open = opening_journalist(claim, evidence)
+    dom_open = opening_domain_scientist(claim, evidence, domain_specialist)
+    
+    # Step 3: Rebuttals
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open, jour_open, dom_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open, jour_open, dom_open)
+    jour_rebut = rebuttal_journalist(claim, evidence, pol_open, sci_open, dom_open)
+    dom_rebut = rebuttal_domain_scientist(claim, evidence, pol_open, sci_open, jour_open, domain_specialist)
+    
+    # Step 4: Closings
+    pol_close = closing_politician(claim, evidence)
+    sci_close = closing_scientist(claim, evidence)
+    jour_close = closing_journalist(claim, evidence)
+    dom_close = closing_domain_scientist(claim, evidence, domain_specialist)
+    
+    # Step 5: Judge verdict
+    final_result = judge_final_verdict(
+        claim, evidence, 
+        pol_open, sci_open, jour_open, dom_open,
+        pol_rebut, sci_rebut, jour_rebut, dom_rebut,
+        pol_close, sci_close, jour_close, dom_close
+    )
+    
+    return (domain_specialist, pol_open, sci_open, jour_open, dom_open,
+            pol_rebut, sci_rebut, jour_rebut, dom_rebut,
+            pol_close, sci_close, jour_close, dom_close,
+            final_result)
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_role", "four_agents"],
+        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "four_agents", "four_agents_people"],
         default="single",
         help="Choose inference mode."
     )
@@ -239,131 +286,113 @@ def main():
     except FileNotFoundError:
         answer_map = {}
 
-    # Check if we can use batch processing for qwen model
-    use_batch = (args.model == "qwen" and args.batch_size > 1)
-    
-    if use_batch:
-        print(f"Using batch processing with batch_size={args.batch_size}")
-        # Collect all unprocessed examples
-        unprocessed_examples = []
-        unprocessed_ids = []
-        for example_id, example in all_examples.items():
-            if example_id not in answer_map:
-                unprocessed_examples.append(example)
-                unprocessed_ids.append(example_id)
-        
-        # Process in batches
-        for i in tqdm(range(0, len(unprocessed_examples), args.batch_size), 
-                     desc=f"Processing batches ({args.mode} + {args.model})"):
-            batch_examples = unprocessed_examples[i:i+args.batch_size]
-            batch_ids = unprocessed_ids[i:i+args.batch_size]
-            
-            claims = [ex["claim"] for ex in batch_examples]
-            evidences = [ex["evidence_full_text"] for ex in batch_examples]
-            
-            if args.mode == "single":
-                results = run_single_agent_batch(claims, evidences, model_info, args.batch_size)
-                for example_id, result in zip(batch_ids, results):
-                    answer_map[example_id] = [result]
-            
-            elif args.mode == "multi":
-                results = run_multi_agent_batch(claims, evidences, model_info, args.batch_size)
-                for example_id, result in zip(batch_ids, results):
-                    answer_map[example_id] = result
-            
-            elif args.mode == "multi_people":
-                results = run_multi_agent_people_batch(claims, evidences, model_info, args.batch_size)
-                for example_id, result in zip(batch_ids, results):
-                    answer_map[example_id] = result
-            
-            elif args.mode == "multi_role":
-                results = run_multi_agent_role_batch(claims, evidences, model_info, args.batch_size)
-                for example_id, result in zip(batch_ids, results):
-                    answer_map[example_id] = result
-            
-            elif args.mode == "four_agents":
-                results = run_four_agents_batch(claims, evidences, model_info, args.batch_size)
-                for example_id, result in zip(batch_ids, results):
-                    answer_map[example_id] = result
-            
-            # Save after each batch
-            with open(output_file, "w") as f:
-                json.dump(answer_map, f, indent=2)
-    else:
-        # Original single processing
-        for example_id, example in tqdm(all_examples.items(), desc=f"Processing examples ({args.mode} + {args.model})"):
-            if example_id in answer_map:
-                continue
+    for example_id, example in tqdm(all_examples.items(), desc=f"Processing examples ({args.mode} + {args.model})"):
+        if example_id in answer_map:
+            continue
 
-            claim = example["claim"]
-            evidence = example["evidence_full_text"]
+        claim = example["claim"]
+        evidence = example["evidence_full_text"]
 
-            if args.mode == "single":
-                result = run_single_agent(claim, evidence, model_info)
-                answer_map[example_id] = [result]
+        if args.mode == "single":
+            result = run_single_agent(claim, evidence, model_info)
+            answer_map[example_id] = [result]
 
-            elif args.mode == "multi":
-                pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence, model_info)
-                answer_map[example_id] = {
-                    "pro_opening": pro_open,
-                    "con_opening": con_open,
-                    "pro_rebuttal": pro_rebut,
-                    "con_rebuttal": con_rebut,
-                    "pro_closing": pro_close,
-                    "con_closing": con_close,
-                    "final_verdict": final_result
-                }
+        elif args.mode == "multi":
+            pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
 
-            elif args.mode == "multi_role":
-                intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_role(claim, evidence, model_info)
-                answer_map[example_id] = {
-                    "intent": intent,
-                    "support_role": support_role,
-                    "oppose_role": oppose_role,
-                    "pro_opening": pro_open,
-                    "con_opening": con_open,
-                    "pro_rebuttal": pro_rebut,
-                    "con_rebuttal": con_rebut,
-                    "pro_closing": pro_close,
-                    "con_closing": con_close,
-                    "final_verdict": final_result
-                }
+        elif args.mode == "multi_role":
+            intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result = run_multi_agent_role(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "support_role": support_role,
+                "oppose_role": oppose_role,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
 
-            elif args.mode == "multi_people":
-                pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
-                answer_map[example_id] = {
-                    "politician_opening": pol_open,
-                    "scientist_opening": sci_open,
-                    "politician_rebuttal": pol_rebut,
-                    "scientist_rebuttal": sci_rebut,
-                    "politician_closing": pol_close,
-                    "scientist_closing": sci_close,
-                    "final_verdict": final_result
-                }
-            
-            elif args.mode == "four_agents":
-                pro1_open, pro2_open, con1_open, con2_open, pro1_rebut, pro2_rebut, con1_rebut, con2_rebut, pro1_close, pro2_close, con1_close, con2_close, final_result = run_four_agents(claim, evidence, model_info)
-                answer_map[example_id] = {
-                    "pro1_opening": pro1_open,
-                    "pro2_opening": pro2_open,
-                    "con1_opening": con1_open,
-                    "con2_opening": con2_open,
-                    "pro1_rebuttal": pro1_rebut,
-                    "pro2_rebuttal": pro2_rebut,
-                    "con1_rebuttal": con1_rebut,
-                    "con2_rebuttal": con2_rebut,
-                    "pro1_closing": pro1_close,
-                    "pro2_closing": pro2_close,
-                    "con1_closing": con1_close,
-                    "con2_closing": con2_close,
-                    "final_verdict": final_result
-                }
-        
-            # Save final results
-            with open(output_file, "w") as f:
-                json.dump(answer_map, f, indent=2)
-            print(f"Results saved to: {output_file}")
-            print(f"Processed {len(answer_map)} examples")
+        elif args.mode == "multi_people":
+            pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_3":
+            jour_open, pol_open, sci_open, jour_rebut, pol_rebut, sci_rebut, jour_close, pol_close, sci_close, final_result = run_multi_agent_people_3(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "journalist_opening": jour_open,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "journalist_rebuttal": jour_rebut,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "journalist_closing": jour_close,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "four_agents":
+            pro1_open, pro2_open, con1_open, con2_open, pro1_rebut, pro2_rebut, con1_rebut, con2_rebut, pro1_close, pro2_close, con1_close, con2_close, final_result = run_four_agents(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "pro1_opening": pro1_open,
+                "pro2_opening": pro2_open,
+                "con1_opening": con1_open,
+                "con2_opening": con2_open,
+                "pro1_rebuttal": pro1_rebut,
+                "pro2_rebuttal": pro2_rebut,
+                "con1_rebuttal": con1_rebut,
+                "con2_rebuttal": con2_rebut,
+                "pro1_closing": pro1_close,
+                "pro2_closing": pro2_close,
+                "con1_closing": con1_close,
+                "con2_closing": con2_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "four_agents_people":
+            domain_specialist, pol_open, sci_open, jour_open, dom_open, pol_rebut, sci_rebut, jour_rebut, dom_rebut, pol_close, sci_close, jour_close, dom_close, final_result = run_four_agents_people(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "domain_specialist": domain_specialist,
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "journalist_opening": jour_open,
+                "domain_scientist_opening": dom_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "journalist_rebuttal": jour_rebut,
+                "domain_scientist_rebuttal": dom_rebut,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "journalist_closing": jour_close,
+                "domain_scientist_closing": dom_close,
+                "final_verdict": final_result
+            }     
+           
+        # Save final results
+        with open(output_file, "w") as f:
+            json.dump(answer_map, f, indent=2)
+        print(f"Results saved to: {output_file}")
+        print(f"Processed {len(answer_map)} examples")
 
 if __name__ == "__main__":
     main()
