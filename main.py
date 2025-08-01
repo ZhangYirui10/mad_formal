@@ -213,11 +213,56 @@ def run_four_agents_people(claim, evidence, model_info):
             pol_close, sci_close, jour_close, dom_close,
             final_result)
 
+def run_multi_agent_stance_3(claim, evidence, model_info):
+    from agents.multi_agents_stance_3 import (
+        set_model_info, opening_pro, rebuttal_pro, closing_pro,
+        opening_con, rebuttal_con, closing_con,
+        opening_flexible, rebuttal_flexible, closing_flexible,
+        judge_final_verdict
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent Stance 3 Debate (Pro vs Con vs Flexible) ===")
+    
+    # Step 1: Generate opening statements for pro and con first
+    pro_open = opening_pro(claim, evidence)
+    con_open = opening_con(claim, evidence)
+    
+    # Step 2: Generate flexible opening statement (needs pro and con arguments)
+    flex_open = opening_flexible(claim, evidence, pro_open, con_open)
+    
+    # Step 3: Generate rebuttals
+    pro_rebut = rebuttal_pro(claim, evidence, con_open)
+    con_rebut = rebuttal_con(claim, evidence, pro_open)
+    
+    # Step 4: Generate flexible rebuttal (needs pro and con arguments)
+    flex_rebut = rebuttal_flexible(claim, evidence, pro_rebut, con_rebut)
+    
+    # Step 5: Generate closings
+    pro_close = closing_pro(claim, evidence)
+    con_close = closing_con(claim, evidence)
+    
+    # Step 6: Generate flexible closing (needs pro and con arguments)
+    flex_close = closing_flexible(claim, evidence, pro_close, con_close)
+    
+    # Step 7: Judge verdict
+    final_result = judge_final_verdict(
+        claim, evidence,
+        flex_open, pro_open, con_open,
+        flex_rebut, pro_rebut, con_rebut,
+        flex_close, pro_close, con_close
+    )
+    
+    return (flex_open, pro_open, con_open,
+            flex_rebut, pro_rebut, con_rebut,
+            flex_close, pro_close, con_close,
+            final_result)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "four_agents", "four_agents_people"],
+        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "multi_stance_3", "four_agents", "four_agents_people"],
         default="single",
         help="Choose inference mode."
     )
@@ -236,12 +281,6 @@ def main():
         "--api_key",
         type=str,
         help="OpenAI API key (required for gpt model)"
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=1,
-        help="Batch size for processing (only works with qwen model, default=1 for single processing)"
     )
     parser.add_argument(
         "--input_file",
@@ -348,6 +387,21 @@ def main():
                 "journalist_closing": jour_close,
                 "politician_closing": pol_close,
                 "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_stance_3":
+            flex_open, pro_open, con_open, flex_rebut, pro_rebut, con_rebut, flex_close, pro_close, con_close, final_result = run_multi_agent_stance_3(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "flexible_opening": flex_open,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "flexible_rebuttal": flex_rebut,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "flexible_closing": flex_close,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
                 "final_verdict": final_result
             }
 
