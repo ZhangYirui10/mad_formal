@@ -20,7 +20,8 @@ def extract_verdict_single(verdict_list):
     return "UNKNOWN"
 
 def extract_verdict_multi(content):
-    text = content.get("final_verdict", "")
+    # Try to get verdict from different possible field names
+    text = content.get("final_verdict", "") or content.get("verdict", "")
     patterns = [
         r'\[?VERDICT\]:\s*(TRUE|FALSE|HALF-TRUE)',
         r'VERDICT\s*:\s*(TRUE|FALSE|HALF-TRUE)',
@@ -35,10 +36,10 @@ def extract_verdict_multi(content):
 def determine_mode(sample_value):
     if isinstance(sample_value, list):
         return "single"
-    elif isinstance(sample_value, dict) and "final_verdict" in sample_value:
+    elif isinstance(sample_value, dict) and ("final_verdict" in sample_value or "verdict" in sample_value):
         return "multi"
     else:
-        raise ValueError("Unknown prediction format.")
+        return "multi"
 
 def convert_prediction_file(pred_file):
     with open(pred_file, "r") as f:
