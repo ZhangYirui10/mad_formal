@@ -92,6 +92,46 @@ def run_multi_agent_role(claim, evidence, model_info):
     )
     return intent, support_role, oppose_role, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close, final_result
 
+def run_multi_agent_role_3(claim, evidence, model_info):
+    from agents.multi_agent_role_3 import (
+        set_model_info, infer_intent_and_roles,
+        opening_pro, rebuttal_pro, closing_pro,
+        opening_con, rebuttal_con, closing_con,
+        opening_journalist, rebuttal_journalist, closing_journalist,
+        judge_final_verdict
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent Role 3 Debate (Role-Based + Journalist) ===")
+    
+    # Step 1: Infer intent and roles
+    intent, support_role, oppose_role = infer_intent_and_roles(claim)
+    
+    # Step 2: Opening statements: Journalist → Pro → Con
+    jour_open = opening_journalist(claim, evidence)
+    pro_open = opening_pro(claim, evidence, support_role, jour_open)
+    con_open = opening_con(claim, evidence, oppose_role, jour_open)
+    
+    # Step 3: Rebuttals: Journalist → Pro → Con
+    jour_rebut = rebuttal_journalist(claim, evidence, pro_open, con_open)
+    pro_rebut = rebuttal_pro(claim, evidence, con_open, support_role, jour_open)
+    con_rebut = rebuttal_con(claim, evidence, pro_open, oppose_role, jour_open)
+    
+    # Step 4: Closings: Journalist → Pro → Con
+    jour_close = closing_journalist(claim, evidence, pro_rebut, con_rebut)
+    pro_close = closing_pro(claim, evidence, support_role, jour_rebut)
+    con_close = closing_con(claim, evidence, oppose_role, jour_rebut)
+    
+    # Step 5: Judge verdict
+    final_result = judge_final_verdict(
+        claim, evidence,
+        pro_open, con_open, jour_open,
+        pro_rebut, con_rebut, jour_rebut,
+        pro_close, con_close, jour_close
+    )
+    
+    return intent, support_role, oppose_role, jour_open, pro_open, con_open, jour_rebut, pro_rebut, con_rebut, jour_close, pro_close, con_close, final_result
+
 def run_multi_agent_people_3(claim, evidence, model_info):
     from agents.multi_agent_people_3 import (
         set_model_info, opening_journalist, rebuttal_journalist, closing_journalist,
@@ -258,11 +298,22 @@ def run_multi_agent_stance_3(claim, evidence, model_info):
             flex_close, pro_close, con_close,
             final_result)
 
+def run_pcj_3(claim, evidence, model_info):
+    from agents.multi_agent_pcj_3 import (
+        set_model_info, run_full_debate
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running PCJ-3 Debate (Pro-Con-Journalist with Intent Inference and Claim Reformulation) ===")
+    
+    result = run_full_debate(claim, evidence)
+    return result
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "multi_stance_3", "four_agents", "four_agents_people"],
+        choices=["single", "multi", "multi_people", "multi_people_3", "multi_role", "multi_role_3", "multi_stance_3", "pcj_3", "four_agents", "four_agents_people"],
         default="single",
         help="Choose inference mode."
     )
@@ -363,6 +414,24 @@ def main():
                 "final_verdict": final_result
             }
 
+        elif args.mode == "multi_role_3":
+            intent, support_role, oppose_role, jour_open, pro_open, con_open, jour_rebut, pro_rebut, con_rebut, jour_close, pro_close, con_close, final_result = run_multi_agent_role_3(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "intent": intent,
+                "support_role": support_role,
+                "oppose_role": oppose_role,
+                "journalist_opening": jour_open,
+                "pro_opening": pro_open,
+                "con_opening": con_open,
+                "journalist_rebuttal": jour_rebut,
+                "pro_rebuttal": pro_rebut,
+                "con_rebuttal": con_rebut,
+                "journalist_closing": jour_close,
+                "pro_closing": pro_close,
+                "con_closing": con_close,
+                "final_verdict": final_result
+            }
+
         elif args.mode == "multi_people":
             pol_open, sci_open, pol_rebut, sci_rebut, pol_close, sci_close, final_result = run_multi_agent_people(claim, evidence, model_info)
             answer_map[example_id] = {
@@ -404,6 +473,10 @@ def main():
                 "con_closing": con_close,
                 "final_verdict": final_result
             }
+
+        elif args.mode == "pcj_3":
+            result = run_pcj_3(claim, evidence, model_info)
+            answer_map[example_id] = result
 
         elif args.mode == "four_agents":
             pro1_open, pro2_open, con1_open, con2_open, pro1_rebut, pro2_rebut, con1_rebut, con2_rebut, pro1_close, pro2_close, con1_close, con2_close, final_result = run_four_agents(claim, evidence, model_info)
