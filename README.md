@@ -122,8 +122,13 @@ python main.py --mode single --input_file /path/to/your/data.json
 **Available Mode Options:**
 - `single`: Single agent mode
 - `multi`: Multi-agent debate mode (3 rounds)
-- `multi_role`: Role-based multi-agent mode with intent inference
 - `multi_people`: Multi-agent debate mode with politician vs scientist roles
+- `multi_people_3`: Multi-agent debate mode with journalist, politician, and scientist (3 agents)
+- `multi_role`: Role-based multi-agent mode with intent inference
+- `multi_role_3`: Role-based multi-agent mode with journalist, pro, and con agents (3 agents)
+- `pcj_3`: Pro-Con-Journalist debate with intent inference and claim reformulation
+- `four_agents`: Four-agent debate mode (2 pro vs 2 con agents)
+- `four_agents_people`: Four-agent debate mode with politician, scientist, journalist, and domain specialist
 
 **Search Method Integration:**
 
@@ -160,6 +165,21 @@ python main.py --mode multi_role --input_file data/full_evidence.json
 
 # Multi-agent people mode with groundtruth evidence
 python main.py --mode multi_people --input_file data/full_evidence.json
+
+# Multi-agent people 3 mode with groundtruth evidence
+python main.py --mode multi_people_3 --input_file data/full_evidence.json
+
+# Multi-agent role 3 mode with groundtruth evidence
+python main.py --mode multi_role_3 --input_file data/full_evidence.json
+
+# PCJ-3 mode with groundtruth evidence
+python main.py --mode pcj_3 --input_file data/full_evidence.json
+
+# Four agents mode with groundtruth evidence
+python main.py --mode four_agents --input_file data/full_evidence.json
+
+# Four agents people mode with groundtruth evidence
+python main.py --mode four_agents_people --input_file data/full_evidence.json
 ```
 
 ## Mode Descriptions
@@ -186,6 +206,49 @@ python main.py --mode multi_people --input_file data/full_evidence.json
 - Politician: Focuses on public opinion, policy implications, and practical considerations
 - Scientist: Emphasizes empirical evidence, methodology, and academic rigor
 - Output: Complete debate transcript with final verdict
+
+### Multi-Agent People 3 Mode (`multi_people_3`)
+- Three-agent debate system with Journalist, Politician, and Scientist
+- **Journalist**: Provides neutral analysis and fact-checking
+- **Politician**: Focuses on public opinion, policy implications, and practical considerations
+- **Scientist**: Emphasizes empirical evidence, methodology, and academic rigor
+- **Debate Flow**: Journalist → Politician → Scientist in each round
+- Output: Complete debate transcript with final verdict
+
+### Multi-Agent Role 3 Mode (`multi_role_3`)
+- Enhanced role-based debate with three agents: Journalist, Pro, and Con
+- **Step 1**: Infers the intent of the claim and determines appropriate roles for supporting and opposing agents
+- **Step 2-4**: Conducts 3-round debate with Journalist moderating and Pro/Con agents with specific roles
+- **Journalist**: Provides neutral analysis and moderates the debate
+- **Pro/Con Agents**: Assigned specific roles based on claim intent
+- **Step 5**: Final verdict by judge
+- Output: Intent inference, role assignments, complete debate transcript, and final verdict
+
+### PCJ-3 Mode (`pcj_3`)
+- Pro-Con-Journalist debate system with advanced features
+- **Intent Inference**: Analyzes claim intent and reformulates for better understanding
+- **Claim Reformulation**: Creates pro and con versions of the claim
+- **Journalist Moderation**: Provides neutral analysis and fact-checking
+- **Structured Debate**: Three-round debate with opening, rebuttal, and closing statements
+- Output: Complete debate process including intent analysis, claim reformulation, and final verdict
+
+### Four Agents Mode (`four_agents`)
+- Four-agent debate system with 2 Pro agents vs 2 Con agents
+- **Pro Agents**: Two agents supporting the claim from different perspectives
+- **Con Agents**: Two agents opposing the claim from different perspectives
+- **Debate Structure**: Opening statements → Rebuttals → Closing statements → Final verdict
+- Each agent provides unique arguments and perspectives
+- Output: Complete debate transcript with final verdict
+
+### Four Agents People Mode (`four_agents_people`)
+- Four-agent debate system with distinct professional roles
+- **Politician**: Focuses on public opinion, policy implications, and practical considerations
+- **Scientist**: Emphasizes empirical evidence, methodology, and academic rigor
+- **Journalist**: Provides neutral analysis, fact-checking, and public interest perspective
+- **Domain Specialist**: Expert in the specific domain of the claim (automatically inferred)
+- **Dynamic Domain Assignment**: System automatically determines the most appropriate domain specialist for each claim
+- **Debate Structure**: Opening statements → Rebuttals → Closing statements → Final verdict
+- Output: Domain specialist assignment, complete debate transcript, and final verdict
 
 ## Output Results
 
@@ -258,6 +321,111 @@ After the program completes, it will generate:
     "scientist_rebuttal": "...",
     "politician_closing": "...",
     "scientist_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Multi-People 3 Mode:**
+```json
+{
+  "example_id": {
+    "journalist_opening": "...",
+    "politician_opening": "...",
+    "scientist_opening": "...",
+    "journalist_rebuttal": "...",
+    "politician_rebuttal": "...",
+    "scientist_rebuttal": "...",
+    "journalist_closing": "...",
+    "politician_closing": "...",
+    "scientist_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Multi-Role 3 Mode:**
+```json
+{
+  "example_id": {
+    "intent": "The claim is about...",
+    "support_role": "Expert",
+    "oppose_role": "Skeptic",
+    "journalist_opening": "...",
+    "pro_opening": "...",
+    "con_opening": "...",
+    "journalist_rebuttal": "...",
+    "pro_rebuttal": "...",
+    "con_rebuttal": "...",
+    "journalist_closing": "...",
+    "pro_closing": "...",
+    "con_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**PCJ-3 Mode:**
+```json
+{
+  "example_id": {
+    "intent_analysis": "...",
+    "claim_reformulation": {
+      "pro_version": "...",
+      "con_version": "..."
+    },
+    "journalist_opening": "...",
+    "pro_opening": "...",
+    "con_opening": "...",
+    "journalist_rebuttal": "...",
+    "pro_rebuttal": "...",
+    "con_rebuttal": "...",
+    "journalist_closing": "...",
+    "pro_closing": "...",
+    "con_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Four Agents Mode:**
+```json
+{
+  "example_id": {
+    "pro1_opening": "...",
+    "pro2_opening": "...",
+    "con1_opening": "...",
+    "con2_opening": "...",
+    "pro1_rebuttal": "...",
+    "pro2_rebuttal": "...",
+    "con1_rebuttal": "...",
+    "con2_rebuttal": "...",
+    "pro1_closing": "...",
+    "pro2_closing": "...",
+    "con1_closing": "...",
+    "con2_closing": "...",
+    "final_verdict": "[VERDICT]: TRUE"
+  }
+}
+```
+
+**Four Agents People Mode:**
+```json
+{
+  "example_id": {
+    "domain_specialist": "Medical Expert",
+    "politician_opening": "...",
+    "scientist_opening": "...",
+    "journalist_opening": "...",
+    "domain_scientist_opening": "...",
+    "politician_rebuttal": "...",
+    "scientist_rebuttal": "...",
+    "journalist_rebuttal": "...",
+    "domain_scientist_rebuttal": "...",
+    "politician_closing": "...",
+    "scientist_closing": "...",
+    "journalist_closing": "...",
+    "domain_scientist_closing": "...",
     "final_verdict": "[VERDICT]: TRUE"
   }
 }
