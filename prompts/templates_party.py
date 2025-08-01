@@ -34,8 +34,8 @@ When making your decision, consider:
 - What would be the practical impact on families and communities?
 
 Example format:
-[REASON]: The evidence clearly supports this claim because...
 [VERDICT]: TRUE
+[REASON]: The evidence clearly supports this claim because...
 
 Do not deviate from this format. Do not ask for more information. Make your decision based on what is provided."""
     else:
@@ -228,8 +228,8 @@ Republican's closing: {critic_closing}
 Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
 
 You MUST respond in exactly this format:
-[REASON]: <your explanation>
 [VERDICT]: TRUE / FALSE / HALF-TRUE
+[REASON]: <your explanation>
 
 Make the verdict in the last line."""
 
@@ -252,8 +252,8 @@ Republican's closing: {con_close}
 Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
 
 You MUST respond in exactly this format:
-[REASON]: <your explanation>
 [VERDICT]: TRUE / FALSE / HALF-TRUE
+[REASON]: <your explanation>
 
 Make the verdict in the last line."""
 
