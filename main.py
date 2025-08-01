@@ -413,11 +413,74 @@ def run_four_agents_people_intent(claim, evidence, model_info):
             result["politician_closing"], result["scientist_closing"], result["journalist_closing"], result["domain_scientist_closing"],
             result["final_verdict"])
 
+def run_multi_agent_people_4r(claim, evidence, model_info):
+    from agents.multi_agent_people_4r import (
+        set_model_info, opening_politician, rebuttal_politician, cross_examination_politician, closing_politician,
+        opening_scientist, rebuttal_scientist, cross_examination_scientist, closing_scientist,
+        judge_final_verdict as judge_final_verdict_people_4r
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People Debate (4 rounds: Politician vs Scientist) ===")
+    pol_open = opening_politician(claim, evidence)
+    sci_open = opening_scientist(claim, evidence)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open)
+    pol_cross = cross_examination_politician(claim, evidence, sci_rebut)
+    sci_cross = cross_examination_scientist(claim, evidence, pol_rebut)
+    pol_close = closing_politician(claim, evidence)
+    sci_close = closing_scientist(claim, evidence)
+    final_result = judge_final_verdict_people_4r(
+        claim, evidence,
+        pol_open, sci_open,
+        pol_rebut, sci_rebut,
+        pol_cross, sci_cross,
+        pol_close, sci_close
+    )
+    return pol_open, sci_open, pol_rebut, sci_rebut, pol_cross, sci_cross, pol_close, sci_close, final_result
+
+def run_multi_agent_people_2r(claim, evidence, model_info):
+    from agents.multi_agent_people_2r import (
+        set_model_info, opening_politician, rebuttal_politician,
+        opening_scientist, rebuttal_scientist,
+        judge_final_verdict as judge_final_verdict_people_2r
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People Debate (2 rounds: Politician vs Scientist) ===")
+    pol_open = opening_politician(claim, evidence)
+    sci_open = opening_scientist(claim, evidence)
+    pol_rebut = rebuttal_politician(claim, evidence, sci_open)
+    sci_rebut = rebuttal_scientist(claim, evidence, pol_open)
+    final_result = judge_final_verdict_people_2r(
+        claim, evidence,
+        pol_open, sci_open,
+        pol_rebut, sci_rebut
+    )
+    return pol_open, sci_open, pol_rebut, sci_rebut, final_result
+
+def run_multi_agent_people_1r(claim, evidence, model_info):
+    from agents.multi_agent_people_1r import (
+        set_model_info, opening_politician,
+        opening_scientist,
+        judge_final_verdict as judge_final_verdict_people_1r
+    )
+    set_model_info(model_info)
+    
+    print("\n=== Running Multi-Agent People Debate (1 round: Politician vs Scientist) ===")
+    pol_open = opening_politician(claim, evidence)
+    sci_open = opening_scientist(claim, evidence)
+    final_result = judge_final_verdict_people_1r(
+        claim, evidence,
+        pol_open, sci_open
+    )
+    return pol_open, sci_open, final_result
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
-        choices=["single", "multi", "multi_people", "multi_people_intent", "multi_people_3", "multi_people_3_intent", "multi_role", "multi_stance_3", "multi_party", "four_agents", "four_agents_people", "multi_intent", "multi_stance_3_intent", "four_agents_intent", "four_agents_people_intent"],
+        choices=["single", "multi", "multi_people", "multi_people_intent", "multi_people_3", "multi_people_3_intent", "multi_role", "multi_stance_3", "multi_party", "four_agents", "four_agents_people", "multi_intent", "multi_stance_3_intent", "four_agents_intent", "four_agents_people_intent", "multi_people_1r", "multi_people_2r", "multi_people_4r"],
         default="single",
         help="Choose inference mode."
     )
@@ -591,6 +654,38 @@ def main():
                 "politician_rebuttal": pol_rebut,
                 "scientist_rebuttal": sci_rebut,
                 "journalist_closing": jour_close,
+                "politician_closing": pol_close,
+                "scientist_closing": sci_close,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_1r":
+            pol_open, sci_open, final_result = run_multi_agent_people_1r(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_2r":
+            pol_open, sci_open, pol_rebut, sci_rebut, final_result = run_multi_agent_people_2r(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "final_verdict": final_result
+            }
+
+        elif args.mode == "multi_people_4r":
+            pol_open, sci_open, pol_rebut, sci_rebut, pol_cross, sci_cross, pol_close, sci_close, final_result = run_multi_agent_people_4r(claim, evidence, model_info)
+            answer_map[example_id] = {
+                "politician_opening": pol_open,
+                "scientist_opening": sci_open,
+                "politician_rebuttal": pol_rebut,
+                "scientist_rebuttal": sci_rebut,
+                "politician_cross_examination": pol_cross,
+                "scientist_cross_examination": sci_cross,
                 "politician_closing": pol_close,
                 "scientist_closing": sci_close,
                 "final_verdict": final_result

@@ -156,6 +156,69 @@ Opponent's argument:
 Write your rebuttal, explaining why the opponent is incorrect and the claim is still FALSE or HALF-TRUE."""
 
 
+# === Cross-Examination Round ===
+def politician_cross_examination_prompt(claim, evidence, opponent_argument):
+    return f"""You are the politician in a political debate. Conduct a cross-examination of your opponent's argument.
+
+Claim: {claim}
+
+Evidence: {evidence}
+
+Opponent's argument: {opponent_argument}
+
+Ask 2-3 specific, challenging questions about your opponent's argument. Focus on:
+- Weaknesses in their evidence or reasoning
+- Potential biases or assumptions
+- Alternative interpretations of the facts
+- Political implications they may have overlooked
+
+Format your response as direct questions to your opponent."""
+
+def scientist_cross_examination_prompt(claim, evidence, opponent_argument):
+    return f"""You are the scientist in a political debate. Conduct a cross-examination of your opponent's argument.
+
+Claim: {claim}
+
+Evidence: {evidence}
+
+Opponent's argument: {opponent_argument}
+
+Ask 2-3 specific, challenging questions about your opponent's argument. Focus on:
+- Methodological flaws in their reasoning
+- Lack of scientific evidence for their claims
+- Statistical or factual inaccuracies
+- Logical fallacies or unsupported assumptions
+
+Format your response as direct questions to your opponent."""
+
+def user_prompt_cross_examination_pro(claim, evidence, con_argument):
+    return f"""You are the supporting agent in a debate. Conduct a cross-examination of your opponent's argument.
+
+Claim: {claim}
+
+Evidence:
+{evidence}
+
+Opponent's argument: {con_argument}
+
+Ask 2-3 specific, challenging questions about your opponent's argument. Focus on weaknesses in their reasoning or evidence.
+
+Format your response as direct questions to your opponent."""
+
+def user_prompt_cross_examination_con(claim, evidence, pro_argument):
+    return f"""You are the opposing agent in a debate. Conduct a cross-examination of your opponent's argument.
+
+Claim: {claim}
+
+Evidence:
+{evidence}
+
+Opponent's argument: {pro_argument}
+
+Ask 2-3 specific, challenging questions about your opponent's argument. Focus on weaknesses in their reasoning or evidence.
+
+Format your response as direct questions to your opponent."""
+
 # === Closing Round ===
 def politician_closing_prompt(claim, evidence):
     return f"""You are the politician in a political debate about the claim below. Summarize your final position.
@@ -228,6 +291,85 @@ You MUST respond in exactly this format:
 Make the verdict in the last line.
 """
 
+def judge_prompt_1r(claim, evidence, pro_open, con_open):
+    return f"""
+You are an ordinary American citizen evaluating a political debate.
+
+Claim: {claim}
+
+Evidence: {evidence}
+
+--- Opening Statements ---
+Politician's opening: {pro_open}
+Scientist's opening: {con_open}
+
+Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
+
+You MUST respond in exactly this format:
+[REASON]: <your explanation>
+[VERDICT]: TRUE / FALSE / HALF-TRUE
+
+Make the verdict in the last line.
+"""
+
+def judge_prompt_2r(claim, evidence, pro_open, con_open, pro_rebut, con_rebut):
+    return f"""
+You are an ordinary American citizen evaluating a political debate.
+
+Claim: {claim}
+
+Evidence: {evidence}
+
+--- Opening Statements ---
+Politician's opening: {pro_open}
+Scientist's opening: {con_open}
+
+--- Rebuttals ---
+Politician's rebuttal: {pro_rebut}
+Scientist's rebuttal: {con_rebut}
+
+Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
+
+You MUST respond in exactly this format:
+[REASON]: <your explanation>
+[VERDICT]: TRUE / FALSE / HALF-TRUE
+
+Make the verdict in the last line.
+"""
+
+def judge_prompt_4r(claim, evidence, pro_open, con_open, pro_rebut, con_rebut, pro_cross, con_cross, pro_close, con_close):
+    return f"""
+You are an ordinary American citizen evaluating a political debate.
+
+Claim: {claim}
+
+Evidence: {evidence}
+
+--- Opening Statements ---
+Politician's opening: {pro_open}
+Scientist's opening: {con_open}
+
+--- Rebuttals ---
+Politician's rebuttal: {pro_rebut}
+Scientist's rebuttal: {con_rebut}
+
+--- Cross-Examination ---
+Politician's cross-examination: {pro_cross}
+Scientist's cross-examination: {con_cross}
+
+--- Closing Statements ---
+Politician's closing: {pro_close}
+Scientist's closing: {con_close}
+
+Based on the evidence and arguments, decide if the claim is TRUE, FALSE, or HALF-TRUE.
+
+You MUST respond in exactly this format:
+[REASON]: <your explanation>
+[VERDICT]: TRUE / FALSE / HALF-TRUE
+
+Make the verdict in the last line.
+"""
+
 def user_prompt_judge_full(claim, evidence, pro_open, con_open, pro_rebut, con_rebut, pro_close, con_close):
     return f"""You are a neutral judge evaluating a factual debate.
 
@@ -249,6 +391,49 @@ Pro Agent:
 
 Con Agent:
 {con_rebut}
+
+--- Closing Statements ---
+Pro Agent:
+{pro_close}
+
+Con Agent:
+{con_close}
+
+Based on the arguments and evidence, decide whether the claim is TRUE, FALSE, or HALF-TRUE.
+
+Answer format:
+[VERDICT]: TRUE / FALSE / HALF-TRUE  
+[REASON]: <your justification>
+"""
+
+def user_prompt_judge_full_4r(claim, evidence, pro_open, con_open, pro_rebut, con_rebut, pro_cross, con_cross, pro_close, con_close):
+    return f"""You are a neutral judge evaluating a factual debate.
+
+Claim: {claim}
+
+Evidence:
+{evidence}
+
+--- Opening Statements ---
+Pro Agent:
+{pro_open}
+
+Con Agent:
+{con_open}
+
+--- Rebuttals ---
+Pro Agent:
+{pro_rebut}
+
+Con Agent:
+{con_rebut}
+
+--- Cross-Examination ---
+Pro Agent:
+{pro_cross}
+
+Con Agent:
+{con_cross}
 
 --- Closing Statements ---
 Pro Agent:
