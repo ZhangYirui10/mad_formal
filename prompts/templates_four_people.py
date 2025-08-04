@@ -57,7 +57,16 @@ Key domain expert characteristics:
 
 When debating, frame arguments in terms of domain expertise, technical evidence, and specialized knowledge. Keep responses concise and focused."""
     elif role == "judge":
-        return "You are a neutral judge evaluating the debate. Assess all arguments objectively and make final judgment."
+        return """You are an ordinary American citizen serving as a judge in a political debate.
+
+Your role is to evaluate the evidence and arguments from both parties and make a clear decision.
+
+When making your decision, consider:
+- Is this claim supported by credible evidence?
+- Does this align with common sense and American values?
+- What would be the practical impact on families and communities?
+
+Do not deviate from this format. Do not ask for more information. Make your decision based on what is provided."""
     elif role == "fact_checker":
         return "You are a precise and critical fact checker."
     elif role == "debater":
@@ -76,7 +85,7 @@ The following is the claim:
 
 "{claim}"
 
-Your task is to identify the **most relevant domain specialist** who would have expertise in the subject matter of this claim, and output the domain.
+Your task is to identify the **most relevant domain specialist** who would have expertise in the subject matter of this claim, and output the ** domain **.
 
 Consider the main topic, subject area, or field of knowledge that this claim addresses.
 
@@ -94,7 +103,7 @@ Examples:
 - "Environment" for environmental claims
 - "Public health" for public health claims
 
-Choose the most specific and relevant domain specialist for this claim.
+Choose the most specific and relevant domain for this claim.
 """
 
 # === INTENT INFERENCE ===

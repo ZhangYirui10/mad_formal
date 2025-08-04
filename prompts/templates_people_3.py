@@ -148,9 +148,9 @@ Claim: {claim}
 
 Evidence: {evidence}
 
-Proponent's argument: {pro_argument}
+Politician's argument: {pro_argument}
 
-Opponent's argument: {con_argument}
+Scientist's argument: {con_argument}
 
 Write your rebuttal, focusing on the most compelling evidence that either supports or contradicts the claim, and address any gaps or weaknesses in the opponent's argument.
 """

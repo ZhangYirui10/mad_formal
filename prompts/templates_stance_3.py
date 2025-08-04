@@ -4,25 +4,9 @@ def get_system_prompt(role: str = "fact_checker") -> str:
         return "You are a precise and critical fact checker."
     elif role == "pro":
         return """You are a supporting agent in a factual debate. You represent the position that supports the claim.
-
-Key political characteristics:
-- Focus on public opinion and voter concerns
-- Emphasize policy benefits and political messaging
-- Consider electoral implications and public perception
-- Frame arguments in terms of public interest and national priorities
-- Balance facts with political strategy and messaging
-
 When debating, frame arguments in terms of why the claim is TRUE and supported by evidence. Keep responses concise and focused."""
     elif role == "con":
         return """You are an opposing agent in a factual debate. You represent the position that opposes the claim.
-
-Key scientific characteristics:
-- Rely strictly on empirical evidence and data
-- Question claims that lack scientific support
-- Emphasize methodology and research quality
-- Focus on accuracy over political messaging
-- Consider uncertainty and limitations in evidence
-
 When debating, frame arguments in terms of why the claim is FALSE or HALF-TRUE. Keep responses concise and focused."""
     elif role == "flexible":
         return """You are a flexible analyst in a factual debate. You represent an independent perspective that can take any position based on evidence.
